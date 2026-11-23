@@ -1,0 +1,605 @@
+openapi: 3.1.0
+info:
+  title: E-Vidyakosha Repository API
+  version: 1.0.0
+  description: >-
+    Concrete implementation contract of approved MSS v2.0 FR-01 through FR-12.
+    Route paths and status codes are implementation decisions (SRS section 4.2).
+servers:
+  - url: http://localhost:4000/api/v1
+    description: Local development
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Users
+  - name: Academic
+  - name: Documents
+  - name: Approvals
+  - name: Uploads
+paths:
+  /health:
+    get:
+      security: []
+      operationId: getHealth
+      summary: Bootstrap health (only endpoint operational in initial scaffold)
+      responses:
+        '200':
+          description: Health response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  service: { type: string }
+                required: [status, service]
+  /auth/register:
+    post:
+      tags: [Auth]
+      operationId: registerStudent
+      security: []
+      summary: FR-01 Student self-registration; role is always STUDENT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name, email, password]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                email: { type: string, format: email, description: Must end with @mitaoe.ac.in }
+                password: { type: string, minLength: 8, maxLength: 128 }
+      responses:
+        '201':
+          description: Student created; NO JWT returned
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      security: []
+      summary: FR-02 Login; invalid email and password share generic error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: JWT and authenticated user
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, user]
+                properties:
+                  token: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/me:
+    get:
+      tags: [Auth]
+      operationId: getCurrentUser
+      summary: Get verified identity (any authenticated role)
+      responses:
+        '200':
+          description: Active account
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /users:
+    get:
+      tags: [Users]
+      operationId: listUsers
+      summary: FR-03 Admin list accounts
+      x-roles: [ADMIN]
+      responses:
+        '200':
+          description: Accounts
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, pageSize, total]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/User' } }
+                  page: { type: integer, minimum: 1 }
+                  pageSize: { type: integer, minimum: 1 }
+                  total: { type: integer, minimum: 0 }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Users]
+      operationId: createPrivilegedUser
+      summary: FR-03 Admin creates Faculty/Admin account
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name, email, password, role]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                role: { type: string, enum: [FACULTY, ADMIN] }
+      responses:
+        '201':
+          description: Created account
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /users/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    patch:
+      tags: [Users]
+      operationId: updateUserRole
+      x-roles: [ADMIN]
+      summary: FR-03 Change role (protect existing dependencies)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [role]
+              properties:
+                role: { $ref: '#/components/schemas/UserRole' }
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserEnvelope' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [Users]
+      operationId: deleteUser
+      x-roles: [ADMIN]
+      summary: FR-03 Delete account only when unreferenced
+      responses:
+        '204': { description: Deleted }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /departments:
+    get:
+      tags: [Academic]
+      operationId: listDepartments
+      summary: FR-04 View catalog departments
+      responses:
+        '200':
+          description: Departments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Department' }
+    post:
+      tags: [Academic]
+      operationId: createDepartment
+      x-roles: [ADMIN]
+      summary: FR-04 Create unique department
+      requestBody:
+        $ref: '#/components/requestBodies/NameInput'
+      responses:
+        '201':
+          description: Department created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Department' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /departments/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    delete:
+      tags: [Academic]
+      operationId: deleteEmptyDepartment
+      x-roles: [ADMIN]
+      summary: FR-04 Delete department only without subjects
+      responses:
+        '204': { description: Deleted }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /subjects:
+    get:
+      tags: [Academic]
+      operationId: listSubjects
+      summary: FR-04 View subjects for document filtering and selection
+      parameters:
+        - { name: departmentId, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Subjects
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Subject' }
+    post:
+      tags: [Academic]
+      operationId: createSubject
+      x-roles: [ADMIN]
+      summary: FR-04 Create subject in existing department
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubjectInput' }
+      responses:
+        '201':
+          description: Subject created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subject' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /subjects/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    patch:
+      tags: [Academic]
+      operationId: updateSubject
+      x-roles: [ADMIN]
+      summary: FR-04 Rename subject (no new department moving behavior)
+      requestBody:
+        $ref: '#/components/requestBodies/NameInput'
+      responses:
+        '200':
+          description: Subject updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subject' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [Academic]
+      operationId: deleteEmptySubject
+      x-roles: [ADMIN]
+      summary: FR-04 Delete subject only without documents
+      responses:
+        '204': { description: Deleted }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /documents:
+    get:
+      tags: [Documents]
+      operationId: searchApprovedDocuments
+      summary: FR-09/FR-10 Approved-only browse/search for all roles
+      parameters:
+        - { name: q, in: query, description: Title text, schema: { type: string } }
+        - { name: subjectId, in: query, schema: { type: string } }
+        - { name: type, in: query, schema: { $ref: '#/components/schemas/DocumentType' } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Approved-only list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DocumentList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Documents]
+      operationId: submitPdf
+      x-roles: [FACULTY]
+      summary: FR-07 Upload a valid unique PDF; create pending submission
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, title, type, subjectId]
+              properties:
+                file: { type: string, format: binary, description: Readable unencrypted PDF <= 50 MiB }
+                title: { type: string, minLength: 1 }
+                author: { type: string }
+                type: { $ref: '#/components/schemas/DocumentType' }
+                subjectId: { type: string }
+      responses:
+        '201':
+          description: Pending submission created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [submissionId, status]
+                properties:
+                  submissionId: { type: string }
+                  status: { type: string, const: PENDING }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+  /documents/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Documents]
+      operationId: getApprovedDocument
+      summary: FR-09/FR-10 Approved-only metadata (no private status)
+      responses:
+        '200':
+          description: Approved document metadata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Document' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Documents]
+      operationId: updateDocumentMetadata
+      x-roles: [ADMIN]
+      summary: FR-06 Edit metadata only; PDF not replaceable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              properties:
+                title: { type: string, minLength: 1 }
+                author: { type: [string, 'null'] }
+                type: { $ref: '#/components/schemas/DocumentType' }
+                subjectId: { type: string }
+      responses:
+        '200':
+          description: Updated document
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Document' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+    delete:
+      tags: [Documents]
+      operationId: deleteDocument
+      x-roles: [ADMIN]
+      summary: FR-06 Permanent delete, linked request and unreferenced file cleanup
+      responses:
+        '204': { description: Deleted }
+        '503': { $ref: '#/components/responses/Unavailable' }
+  /documents/{id}/pdf:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Documents]
+      operationId: inlineApprovedPdf
+      summary: FR-11 Server-authorized approved PDF inline stream
+      responses:
+        '200':
+          description: Approved PDF bytes, Content-Disposition inline
+          headers:
+            Content-Disposition: { schema: { type: string } }
+            X-Content-Type-Options: { schema: { type: string } }
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /documents/{id}/download:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Documents]
+      operationId: downloadApprovedPdf
+      summary: FR-12 Server-authorized approved PDF attachment stream
+      responses:
+        '200':
+          description: Approved PDF bytes, Content-Disposition attachment
+          headers:
+            Content-Disposition: { schema: { type: string } }
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /uploads/mine:
+    get:
+      tags: [Uploads]
+      operationId: listOwnSubmissions
+      x-roles: [FACULTY]
+      summary: FR-08 Only authenticated Faculty's own submissions
+      responses:
+        '200':
+          description: Private owned submission statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Submission' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /approvals/pending:
+    get:
+      tags: [Approvals]
+      operationId: listPendingApprovals
+      x-roles: [ADMIN]
+      summary: FR-05 Pending upload metadata for Admin; unapproved binary preview not specified
+      responses:
+        '200':
+          description: Pending review metadata
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Submission' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /approvals/{id}/decision:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      tags: [Approvals]
+      operationId: decideUpload
+      x-roles: [ADMIN]
+      summary: FR-05 Single final decision; reject requires reason
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [APPROVED, REJECTED] }
+                reason: { type: string, minLength: 1, description: Required if REJECTED }
+      responses:
+        '200':
+          description: Review finalized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Submission' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: MongoDB ObjectId serialized as 24-character hex string
+      schema: { type: string, pattern: '^[a-fA-F0-9]{24}$' }
+  requestBodies:
+    NameInput:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [name]
+            properties:
+              name: { type: string, minLength: 1, maxLength: 120 }
+  schemas:
+    UserRole: { type: string, enum: [ADMIN, FACULTY, STUDENT] }
+    DocumentStatus: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+    DocumentType:
+      type: string
+      enum: [EBOOK, REFERENCE_BOOK, RESEARCH_PAPER, LAB_MANUAL, LECTURE_NOTES, QUESTION_PAPER, OTHER]
+    User:
+      type: object
+      additionalProperties: false
+      required: [id, name, email, role, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/UserRole' }
+        createdAt: { type: string, format: date-time }
+    UserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+    Department:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+    Subject:
+      type: object
+      required: [id, name, departmentId]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        departmentId: { type: string }
+    SubjectInput:
+      type: object
+      additionalProperties: false
+      required: [name, departmentId]
+      properties:
+        name: { type: string, minLength: 1 }
+        departmentId: { type: string }
+    Document:
+      type: object
+      required: [id, title, author, type, subjectId, uploadedAt]
+      description: Approved-only metadata; deliberately no private fileAsset/gridFs IDs
+      properties:
+        id: { type: string }
+        title: { type: string }
+        author: { type: [string, 'null'] }
+        type: { $ref: '#/components/schemas/DocumentType' }
+        subjectId: { type: string }
+        uploadedAt: { type: string, format: date-time }
+    DocumentList:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Document' } }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        total: { type: integer, minimum: 0 }
+    Submission:
+      type: object
+      required: [id, document, status, rejectionReason, submittedAt, reviewedAt]
+      description: Status is read from referenced Document.status, not stored in uploadRequests
+      properties:
+        id: { type: string }
+        document: { $ref: '#/components/schemas/Document' }
+        status: { $ref: '#/components/schemas/DocumentStatus' }
+        rejectionReason: { type: [string, 'null'] }
+        submittedAt: { type: string, format: date-time }
+        reviewedAt: { type: [string, 'null'], format: date-time }
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Unauthorized:
+      description: Missing/expired/invalid credentials or generic login error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Forbidden:
+      description: Insufficient role
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    NotFound:
+      description: Missing or non-approved item; do not reveal unapproved state
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Conflict:
+      description: Duplicate, dependency, or already-reviewed conflict
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    TooLarge:
+      description: PDF exceeds 50 MiB
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Unavailable:
+      description: Storage operation unavailable; cleanup/reconciliation required
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }

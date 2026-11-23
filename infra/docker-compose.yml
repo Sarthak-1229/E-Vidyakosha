@@ -1,0 +1,10 @@
+services:
+  mongodb:
+    image: mongo:8.0
+    container_name: evidy-mongodb
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports: ["127.0.0.1:27017:27017"]
+    volumes:
+      - evidy-mongo-data:/data/db
+volumes:
+  evidy-mongo-data:
