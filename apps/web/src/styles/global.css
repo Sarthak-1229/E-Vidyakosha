@@ -943,18 +943,20 @@ p {
 }
 
 .modal-content {
-  background: var(--c-surface);
+  position: relative;
+  z-index: 1;
+  background: #ffffff;
   border: 1px solid var(--c-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-elevated);
   width: min(560px, 100%);
   overflow: hidden;
-  animation: modalIn 0.16s ease-out;
+  animation: modalIn 0.14s ease-out;
 }
 
 @keyframes modalIn {
   from {
-    opacity: 0;
+    opacity: 1;
     transform: translateY(6px);
   }
   to {

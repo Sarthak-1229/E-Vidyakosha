@@ -54,6 +54,7 @@ export const LibraryPage: React.FC = () => {
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'grid' : 'table',
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoadingHierarchy, setIsLoadingHierarchy] = useState<boolean>(true);
   const [hierarchyError, setHierarchyError] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +73,7 @@ export const LibraryPage: React.FC = () => {
 
   useEffect(() => {
     let active = true;
+    setIsLoadingHierarchy(true);
     async function loadHierarchy() {
       try {
         const [depts, subs] = await Promise.all([listDepartments(), listSubjects()]);
@@ -80,6 +82,8 @@ export const LibraryPage: React.FC = () => {
         setSubjects(subs);
       } catch (cause) {
         if (active) setHierarchyError(getErrorMessage(cause));
+      } finally {
+        if (active) setIsLoadingHierarchy(false);
       }
     }
     void loadHierarchy();
@@ -221,7 +225,7 @@ export const LibraryPage: React.FC = () => {
         <div className="metric-tile">
           <div>
             <div className="metric-label">Departments</div>
-            <div className="metric-value">{departments.length}</div>
+            <div className="metric-value">{isLoadingHierarchy ? '—' : departments.length}</div>
           </div>
           <div className="metric-icon">
             <Building2 size={18} />
@@ -230,7 +234,7 @@ export const LibraryPage: React.FC = () => {
         <div className="metric-tile">
           <div>
             <div className="metric-label">Courses / Subjects</div>
-            <div className="metric-value">{subjects.length}</div>
+            <div className="metric-value">{isLoadingHierarchy ? '—' : subjects.length}</div>
           </div>
           <div className="metric-icon">
             <BookOpen size={18} />
@@ -398,7 +402,7 @@ export const LibraryPage: React.FC = () => {
                     </td>
                     <td>
                       <div style={{ fontWeight: 600, color: 'var(--c-ink)', fontSize: '12.5px' }}>
-                        {subject ? subject.name : '—'}
+                        {subject ? subject.name : isLoadingHierarchy ? 'Loading…' : '—'}
                       </div>
                       {department && (
                         <div style={{ fontSize: '11.5px', color: 'var(--c-text-muted)' }}>
