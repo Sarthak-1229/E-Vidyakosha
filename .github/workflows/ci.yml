@@ -4,21 +4,34 @@ on:
     branches: [main, 'feat/**']
   pull_request:
     branches: [main]
+permissions:
+  contents: read
 jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Install dependencies (bootstrap; change to npm ci after committing lockfile)
-        run: npm install --no-audit --no-fund
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Source traceability and tracked files
+        run: python scripts/verify_repository.py --ci
       - name: Lint
         run: npm run lint
       - name: Typecheck
         run: npm run typecheck
-      - name: Tests
+      - name: Unit, contract and React component tests
         run: npm run test
+      - name: MongoDB replica-set integration tests
+        run: npm run test:integration -w @evidy/api
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser API tests
+        run: npm run test:e2e -w @evidy/api
       - name: Build
         run: npm run build
+      - name: Audit production dependencies
+        run: npm audit --omit=dev

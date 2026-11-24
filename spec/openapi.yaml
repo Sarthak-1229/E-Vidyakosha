@@ -22,7 +22,7 @@ paths:
     get:
       security: []
       operationId: getHealth
-      summary: Bootstrap health (only endpoint operational in initial scaffold)
+      summary: API liveness check
       responses:
         '200':
           description: Health response
