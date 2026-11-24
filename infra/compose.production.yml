@@ -1,0 +1,16 @@
+services:
+  app:
+    build:
+      context: ..
+    image: evidyakosha:local
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      WEB_ORIGIN: ${WEB_ORIGIN:?Set WEB_ORIGIN to the HTTPS public origin}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET through the deployment environment}
+      MONGODB_URI: ${MONGODB_URI:?Set MONGODB_URI to a MongoDB replica-set URI}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-0}
+    ports:
+      - "127.0.0.1:4000:4000"

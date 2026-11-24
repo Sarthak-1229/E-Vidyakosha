@@ -1,66 +1,81 @@
 # E-Vidyakosha
 
-**Smart Library E-Book & Reference Document Repository** — academic MERN implementation of the **approved MSS v2.0**, branded **E-Vidyakosha**.
+E-Vidyakosha is the MERN academic document repository defined by MSS v2.0. Students discover approved PDFs, Faculty submit them, and administrators manage users, subjects, documents, and reviews. The [API contract](spec/openapi.yaml) and [integration verification](docs/13-INTEGRATION-VERIFICATION.md) map the implementation to FR-01–FR-12.
 
-The Express API implements FR-01 through FR-12. The React checkout contains the design preview. See the [backend traceability and verification matrix](docs/12-BACKEND-TRACEABILITY.md).
+## Local development
 
-## The two-agent workflow
+Use Node.js 24 LTS, npm, and a MongoDB replica set. The [database guide](infra/README.md) covers the loopback Docker replica set and managed databases.
 
-- **Codex**: `apps/api/`, `packages/shared/`, storage, contract/API integration tests. Work on branch `feat/backend-codex`.
-- **Antigravity**: `apps/web/`, styling, accessibility, UI behavior and browser tests. Work on branch `feat/frontend-antigravity`.
-- **You**: approve contract changes and merge PRs. Both agents read root `AGENTS.md`; Antigravity also reads `GEMINI.md`.
-- Agents **must not** work simultaneously in the same checkout/branch. Use two separate clones or Git worktrees.
+1. Run `npm ci` from the repository root.
+2. Start or connect to your MongoDB replica set. For the bundled local setup, use `docker compose -f infra/docker-compose.yml up -d` and initialize `rs0` as shown in the database guide.
+3. Configure `apps/api/.env` if your checkout has no existing configuration. The development API defaults to port 4000 and Vite uses port 5173.
 
-## Read first
+```powershell
+if (-not (Test-Path apps/api/.env)) {
+  $evidyJwt = node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
+  (Get-Content -Raw apps/api/.env.example).Replace("JWT_SECRET=", "JWT_SECRET=$evidyJwt") |
+    Set-Content -Encoding ascii apps/api/.env
+}
+```
 
-1. [`docs/01-SOURCE-OF-TRUTH.md`](docs/01-SOURCE-OF-TRUTH.md) — 8 original PDFs and extracted text.
-2. [`docs/02-REQUIREMENTS.md`](docs/02-REQUIREMENTS.md) — immutable FR-01 ... FR-12 and scope boundaries.
-3. [`docs/03-ARCHITECTURE.md`](docs/03-ARCHITECTURE.md) — modules, security, consistency, storage.
-4. [`docs/04-API-CONTRACT.md`](docs/04-API-CONTRACT.md) and [`spec/openapi.yaml`](spec/openapi.yaml) — integration contract.
-5. [`docs/05-UI-DESIGN.md`](docs/05-UI-DESIGN.md) — user-approved atmospheric glassmorphism.
-6. [`docs/06-TEST-MATRIX.md`](docs/06-TEST-MATRIX.md) — acceptance and negative-path evidence.
-7. [`docs/07-DELIVERY-PLAN.md`](docs/07-DELIVERY-PLAN.md) — responsibilities and milestones.
-8. [`docs/08-OPEN-DECISIONS.md`](docs/08-OPEN-DECISIONS.md) — documented ambiguities and decisions.
+Use the example URI for the bundled replica set, or set `MONGODB_URI` for your database. `WEB_ORIGIN` specifies the browser origin allowed for cross-origin requests. The Vite proxy defaults to `http://127.0.0.1:4000`; use `API_PROXY_TARGET` in the web development environment if you run the API on another port.
 
-## Local prerequisites
+### Provision the first Admin
 
-- Node **24 LTS** recommended, or Node 22.12+.
-- npm, Git; MongoDB replica set (local Docker setup in `infra/README.md` or managed development database).
-- Copy environment examples and provide **your own credentials**. Never commit `.env` or password values.
+Run this one time against the intended database. Supply your own Admin name, email and unique password of 16–128 characters. The CLI refuses a second bootstrap.
+
+```powershell
+$env:BOOTSTRAP_ADMIN_NAME = Read-Host 'Admin name'
+$env:BOOTSTRAP_ADMIN_EMAIL = Read-Host 'Admin email'
+$evidyPassword = Read-Host 'Admin password' -AsSecureString
+$env:BOOTSTRAP_ADMIN_PASSWORD = [System.Net.NetworkCredential]::new('', $evidyPassword).Password
+try {
+  npm run admin:bootstrap -w @evidy/api
+} finally {
+  Remove-Item Env:BOOTSTRAP_ADMIN_PASSWORD, Env:BOOTSTRAP_ADMIN_EMAIL, Env:BOOTSTRAP_ADMIN_NAME
+}
+```
+
+On macOS and Linux, export the same three variables for the command. Use a silent password prompt or a secret manager. Future privileged accounts are provisioned through the Admin UI.
+
+### Launch
+
+```bash
+npm run dev
+```
+
+Open [the development application](http://localhost:5173). The API is available directly at `http://localhost:4000/api/v1`. Development and built applications default to the real API. Explicitly set `VITE_USE_MOCKS=true` for a mock-only Vite development session. Configure a disposable `VITE_MOCK_PASSWORD` locally if you need the mock's fixture accounts. The production build excludes the mock adapter.
+
+## Production build and deployment
 
 ```bash
 npm ci
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-npm run dev
-npm run lint
-npm run typecheck
-npm run test
-npm run test:integration -w @evidy/api
-npx playwright install chromium
-npm run test:e2e -w @evidy/api
 npm run build
+npm start
 ```
 
-On Windows PowerShell use `Copy-Item apps/api/.env.example apps/api/.env` and similarly for `apps/web`.
+The combined Express server serves the React build plus `/api/v1` on port 4000. Keep `VITE_API_BASE_URL=/api/v1` for this same-origin deployment. For a container deployment, supply `MONGODB_URI`, `JWT_SECRET`, and the HTTPS `WEB_ORIGIN` through your deployment environment or secret manager. Use an authenticated, persistent MongoDB replica set with TLS.
 
-The API listens at `http://localhost:4000/api/v1`. Configure the database and JWT secret, then provision the initial administrator as described in the [backend operations guide](infra/README.md). The integration tests start their own MongoDB replica set, independent of the development database.
+```bash
+docker compose -f infra/compose.production.yml up -d --build
+```
 
-## Confidential source files
+The container binds through loopback on the host. Configure the public TLS reverse proxy in front of port 4000 with a request body limit larger than 50 MiB to allow multipart overhead. Preserve the API's streaming responses. Set `TRUST_PROXY_HOPS` to the actual number of trusted proxies only when they form the sole request path and overwrite forwarding headers. Use `/api/v1/health` as the liveness endpoint. See the [operations guide](infra/README.md) for container Admin provisioning and GridFS maintenance.
 
-The starter ZIP contains all 8 original source PDFs and their searchable text under `docs/reference/`. **They are excluded from Git by default** because the PDFs contain students' names and PRNs. Copy `docs/reference/` from this ZIP into **each agent's separate checkout**, but do not force-add them to a public GitHub repository unless all participants approve. Requirements summaries and engineering contracts under `docs/` are included in Git and are enough for normal coding; inspect the private originals for source disputes.
+## Verification
 
-## Original project
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run test:integration -w @evidy/api
+npm run build
+npx playwright install chromium
+npm run test:e2e -w @evidy/api
+npm audit
+python scripts/verify_repository.py --ci
+```
 
-Repo: https://github.com/Sarthak-1229/E-Vidyakosha
+Integration and browser tests start isolated real replica sets. The browser tests exercise the built React UI against the live Express routes. CI runs these checks and smoke-tests the production image against MongoDB.
 
-See [the Git handoff](docs/09-GIT-HANDOFF.md) for ownership and merge order. Use the one-command bootstrap when starting from the extracted kit.
-
-## Automated setup (recommended)
-
-For a one-command clone + scaffold + environment + Docker/npm checks + two isolated agent worktrees, see [`docs/11-ONE-COMMAND-BOOTSTRAP.md`](docs/11-ONE-COMMAND-BOOTSTRAP.md).
-
-- **Windows:** `powershell -ExecutionPolicy Bypass -File .\RUN_SETUP_WINDOWS.ps1`
-- **macOS/Linux:** `bash ./RUN_SETUP_MAC_LINUX.sh`
-
-Then paste the prompts from [`COPY_PASTE_TO_AGENTS.md`](COPY_PASTE_TO_AGENTS.md) into Codex and Antigravity. Setup may require GitHub login and installed local prerequisites; it never bypasses authentication or silently hides failed tests.
+The private SAD PDFs and extracts supplied with the setup kit belong only in local checkouts. Keep .env files and credentials outside Git. [Source index](docs/01-SOURCE-OF-TRUTH.md)

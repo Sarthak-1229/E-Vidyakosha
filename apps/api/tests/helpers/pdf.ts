@@ -2,7 +2,7 @@ import { PDFDocument } from 'pdf-lib';
 
 export async function testPdf(label: string, size?: number) {
   const pdf = await PDFDocument.create();
-  pdf.addPage().drawText(label);
+  pdf.addPage().drawText(label, { x: 48, y: 740, size: 20 });
   pdf.setTitle(label);
   const bytes = Buffer.from(await pdf.save());
 

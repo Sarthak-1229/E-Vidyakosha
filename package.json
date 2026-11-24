@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "concurrently --kill-others -n api,web \"npm run dev -w @evidy/api\" \"npm run dev -w @evidy/web\"",
     "build": "npm run build -w @evidy/shared && npm run build -w @evidy/api && npm run build -w @evidy/web",
+    "start": "npm start -w @evidy/api -- --serve-web",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "eslint .",
