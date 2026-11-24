@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: e-vidyakosha
+    runtime: docker
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    plan: free
+    region: singapore
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: WEB_ORIGIN
+        sync: false
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+    healthCheckPath: /api/v1/health
