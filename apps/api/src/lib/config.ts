@@ -19,6 +19,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     PORT: z.coerce.number().int().min(1).max(65535).default(4000),
     WEB_ORIGIN: webOrigin.default('http://localhost:5173'),
     JWT_SECRET: tokenSecret,
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
   }).safeParse(env);
   if (!config.success) {
     const fields = config.error.issues.map(issue => issue.path.join('.')).join(', ');
@@ -30,5 +31,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     port: config.data.PORT,
     webOrigin: config.data.WEB_ORIGIN,
     jwtSecret: config.data.JWT_SECRET,
+    trustProxyHops: config.data.TRUST_PROXY_HOPS,
   };
 }

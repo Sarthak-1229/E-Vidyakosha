@@ -1,0 +1,58 @@
+.glass-card.pdf-viewer {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  height: min(80vh, 800px);
+  min-height: 390px;
+}
+
+.glass-card.pdf-viewer:fullscreen { height: 100%; border-radius: 0; }
+
+.pdf-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 10px 14px;
+  color: #fff;
+  background: var(--c-midnight);
+}
+
+.pdf-title, .pdf-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+}
+
+.pdf-title { flex: 1 1 140px; min-width: 0; font-weight: 600; }
+.pdf-title svg { flex-shrink: 0; color: #93c5fd; }
+.pdf-title span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pdf-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 8px;
+  padding: 5px;
+  color: #fff;
+  background: transparent;
+}
+
+.pdf-controls button:disabled { opacity: 0.5; }
+.pdf-controls button:not(:disabled):hover, .pdf-controls .pdf-download { background: #354b66; }
+.pdf-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; background: #475569; color: #fff; }
+.pdf-page-wrap { width: max-content; min-width: 100%; text-align: center; }
+.pdf-page canvas { display: block; margin: 0 auto; background: #fff; }
+.pdf-message { width: min(100%, 450px); margin: 12px auto; color: var(--c-midnight); }
+.pdf-message .btn { margin-top: 12px; }
+.pdf-body > [role="status"] { margin: 24px auto; justify-content: center; }
+
+@media (max-width: 640px) {
+  .pdf-toolbar { padding: 8px 10px; gap: 6px 10px; }
+  .pdf-title { flex-basis: 100%; }
+  .pdf-controls button { min-width: 34px; min-height: 34px; }
+}

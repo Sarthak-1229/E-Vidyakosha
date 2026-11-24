@@ -1,27 +1,116 @@
-import type { ReactNode } from 'react';
-import { ArrowRight, BookOpenText, FileCheck2, FileSearch, GraduationCap, LibraryBig, ShieldCheck } from 'lucide-react';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
+import { AppLayout } from './components/layout/AppLayout';
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
-function Brand() {
-  return <Link className="brand" to="/" aria-label="E-Vidyakosha home"><span className="brand-mark"><BookOpenText size={23} strokeWidth={1.9} /></span><span>E-Vidyakosha</span></Link>;
-}
+// Public Pages
+import { LandingPage } from './pages/public/LandingPage';
+import { SignInPage } from './pages/public/SignInPage';
+import { RegisterPage } from './pages/public/RegisterPage';
+import { NotFoundPage } from './pages/public/NotFoundPage';
 
-function Shell({ children }: { children: ReactNode }) {
-  return <div className="app-shell"><div className="atmosphere atmosphere-a" aria-hidden="true" /><div className="atmosphere atmosphere-b" aria-hidden="true" /><header className="topbar"><Brand /><nav aria-label="Main navigation"><a href="/#features">Features</a><a href="/#how-it-works">How it works</a><Link className="nav-cta" to="/sign-in">Sign in <ArrowRight size={16} /></Link></nav></header><main>{children}</main><footer className="footer">E-Vidyakosha <span>·</span> Academic reference repository <span>·</span> MSS v2.0</footer></div>;
-}
+// Student Pages
+import { LibraryPage } from './pages/student/LibraryPage';
+import { DocumentDetailPage } from './pages/student/DocumentDetailPage';
 
-function Welcome() {
-  return <>
-    <section className="hero" aria-labelledby="hero-title"><div className="hero-copy"><span className="eyebrow"><span className="eyebrow-dot" /> A calmer way to learn</span><h1 id="hero-title">Knowledge, <em>beautifully</em> within reach.</h1><p>A thoughtfully organized academic library for learning materials, lecture notes, reference books and papers. One space for everything that matters.</p><div className="hero-actions"><Link className="pill dark" to="/sign-in">Explore the library <ArrowRight size={18} /></Link><a className="pill light" href="#how-it-works">See how it works</a></div><span className="micro-note">A design preview — app features are not yet connected.</span></div><div className="hero-art" aria-label="Decorative preview of the academic catalog"><div className="orb" /><div className="glass float-card"><div className="float-eyebrow"><LibraryBig size={18}/> STUDY SPACE</div><h2>Everything in its place.</h2><p>Find the resources you need, minus the noise.</p><div className="preview-search"><FileSearch size={18} /> Search books, notes, papers...</div><div className="preview-list"><span><FileCheck2 size={18}/> Lecture notes <small>CURATED</small></span><span><BookOpenText size={18}/> Reference books <small>ORGANIZED</small></span></div></div><div className="mini-glass"><ShieldCheck size={20}/> Quality-reviewed resources</div></div></section>
-    <section className="section" id="features"><div className="section-head"><span className="eyebrow">BUILT FOR FOCUSED LEARNING</span><h2>Simple for you. Structured for everyone.</h2></div><div className="feature-grid"><article className="feature glass"><div className="icon-well"><FileSearch size={23}/></div><h3>Discover effortlessly</h3><p>Find approved PDFs by subject, document type or title without hunting across disconnected channels.</p></article><article className="feature glass"><div className="icon-well"><GraduationCap size={23}/></div><h3>Faculty contributions</h3><p>Submit academic materials and follow their review status in a dedicated workspace.</p></article><article className="feature glass"><div className="icon-well"><ShieldCheck size={23}/></div><h3>Thoughtful curation</h3><p>Administrators manage categories and review submissions before they enter the shared repository.</p></article></div></section>
-    <section className="section how" id="how-it-works"><div className="glass how-card"><div><span className="eyebrow">ONE COLLECTION, THREE ROLES</span><h2>Designed around your academic day.</h2><p>Students discover and read. Faculty contribute. Administrators organize and approve. Everyone works from a consistent source of knowledge.</p></div><Link className="pill dark" to="/sign-in">Continue <ArrowRight size={18}/></Link></div></section>
-  </>;
-}
+// Faculty Pages
+import { FacultyUploadPage } from './pages/faculty/FacultyUploadPage';
+import { FacultySubmissionsPage } from './pages/faculty/FacultySubmissionsPage';
 
-function SignIn() {
-  return <section className="sign-section"><div className="glass signin-card"><span className="eyebrow">YOUR LIBRARY AWAITS</span><h1>Welcome back.</h1><p>The authentication form will be connected to the approved API during implementation.</p><form onSubmit={(e) => e.preventDefault()}><label htmlFor="email">Institutional email</label><input id="email" type="email" placeholder="name@mitaoe.ac.in" disabled /><label htmlFor="password">Password</label><input id="password" type="password" placeholder="••••••••" disabled /><button className="pill dark" type="button" disabled>Sign in — coming in implementation</button></form><Link className="back-link" to="/">← Back to home</Link></div></section>;
-}
+// Admin Pages
+import { ApprovalsQueuePage } from './pages/admin/ApprovalsQueuePage';
+import { DocumentManagementPage } from './pages/admin/DocumentManagementPage';
+import { AcademicHierarchyPage } from './pages/admin/AcademicHierarchyPage';
+import { UserManagementPage } from './pages/admin/UserManagementPage';
 
 export function App() {
-  return <Shell><Routes><Route path="/" element={<Welcome />} /><Route path="/sign-in" element={<SignIn />} /><Route path="*" element={<section className="not-found"><h1>Page not found</h1><Link className="pill dark" to="/">Go home</Link></section>} /></Routes></Shell>;
+  return (
+    <AuthProvider>
+      <ToastProvider>
+        <AppLayout>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/sign-in" element={<SignInPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+
+            {/* Authenticated Shared Routes (Student, Faculty, Admin) */}
+            <Route
+              path="/library"
+              element={
+                <ProtectedRoute allowedRoles={['STUDENT', 'FACULTY', 'ADMIN']}>
+                  <LibraryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/library/:id"
+              element={
+                <ProtectedRoute allowedRoles={['STUDENT', 'FACULTY', 'ADMIN']}>
+                  <DocumentDetailPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Faculty Routes */}
+            <Route
+              path="/faculty/upload"
+              element={
+                <ProtectedRoute allowedRoles={['FACULTY']}>
+                  <FacultyUploadPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/faculty/submissions"
+              element={
+                <ProtectedRoute allowedRoles={['FACULTY']}>
+                  <FacultySubmissionsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin/approvals"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <ApprovalsQueuePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/documents"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <DocumentManagementPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/academic"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <AcademicHierarchyPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <UserManagementPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 404 Catch-All */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </AppLayout>
+      </ToastProvider>
+    </AuthProvider>
+  );
 }
+export default App;

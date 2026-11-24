@@ -8,7 +8,7 @@ test('requires valid configuration and never returns secrets in errors', () => {
   assert.throws(() => loadConfig({ JWT_SECRET: 'short-secret-example' }), /^Error: Invalid configuration for JWT_SECRET\.$/);
   assert.throws(() => loadConfig({ JWT_SECRET: 's'.repeat(32), MONGODB_URI: 'invalid-password' }), /MONGODB_URI/);
   assert.deepEqual(loadConfig({ JWT_SECRET: 's'.repeat(32), MONGODB_URI: 'mongodb://localhost/example' }), {
-    mongoUri: 'mongodb://localhost/example', webOrigin: 'http://localhost:5173', port: 4000, jwtSecret: 's'.repeat(32),
+    mongoUri: 'mongodb://localhost/example', webOrigin: 'http://localhost:5173', port: 4000, jwtSecret: 's'.repeat(32), trustProxyHops: 0,
   });
 });
 
