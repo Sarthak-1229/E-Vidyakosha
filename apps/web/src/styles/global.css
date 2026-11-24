@@ -408,6 +408,13 @@ textarea:focus-visible,
   font-weight: 800;
 }
 
+.user-name-label {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .user-role-tag {
   font-size: 10px;
   letter-spacing: 0.6px;
@@ -1681,11 +1688,24 @@ p {
 
 @media (max-width: 640px) {
   .topbar {
-    padding: 0 14px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .topbar-left {
+    gap: 10px;
   }
   .topbar-divider,
-  .topbar-context {
+  .topbar-context,
+  .user-name-label {
     display: none;
+  }
+  .user-menu-wrap {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .user-menu-trigger {
+    padding: 4px 8px 4px 4px;
+    gap: 6px;
   }
   .console-container {
     padding: 18px 14px 36px;

@@ -145,7 +145,7 @@ export const Navbar: React.FC = () => {
               <span className="user-avatar-chip" aria-hidden="true">
                 {initials}
               </span>
-              <span style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span className="user-name-label">
                 {user?.name}
               </span>
               <span className="user-role-tag">{user?.role}</span>
