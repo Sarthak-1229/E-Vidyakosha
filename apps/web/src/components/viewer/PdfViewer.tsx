@@ -93,14 +93,14 @@ export function PdfViewer({ documentId, documentTitle }: PdfViewerProps) {
   }
 
   return (
-    <section ref={container} className="glass-card pdf-viewer" data-testid="pdf-viewer-container" aria-label="PDF viewer">
+    <section ref={container} className="pdf-viewer" data-testid="pdf-viewer-container" aria-label="PDF viewer">
       <div className="pdf-toolbar">
         <div className="pdf-title"><FileText size={16} aria-hidden="true" /><span>{documentTitle}</span></div>
         <div className="pdf-controls" aria-label="Page controls" role="group">
           <button type="button" aria-label="Previous page" disabled={!pdf || page === 1} onClick={() => changePage(page - 1)}>
             <ChevronLeft size={16} aria-hidden="true" />
           </button>
-          <span aria-live="polite">{pdf ? `Page ${page} of ${pdf.numPages}` : 'Pages'}</span>
+          <span className="pdf-meta-counter" aria-live="polite">{pdf ? `Page ${page} of ${pdf.numPages}` : 'Pages'}</span>
           <button type="button" aria-label="Next page" disabled={!pdf || page === pdf.numPages} onClick={() => changePage(page + 1)}>
             <ChevronRight size={16} aria-hidden="true" />
           </button>
@@ -109,7 +109,7 @@ export function PdfViewer({ documentId, documentTitle }: PdfViewerProps) {
           <button type="button" aria-label="Zoom out" disabled={!pdf || zoom === 50} onClick={() => setZoom(Math.max(50, zoom - 25))}>
             <ZoomOut size={16} aria-hidden="true" />
           </button>
-          <span aria-live="polite">{zoom}%</span>
+          <span className="pdf-meta-counter" aria-live="polite">{zoom}%</span>
           <button type="button" aria-label="Zoom in" disabled={!pdf || zoom === 200} onClick={() => setZoom(Math.min(200, zoom + 25))}>
             <ZoomIn size={16} aria-hidden="true" />
           </button>

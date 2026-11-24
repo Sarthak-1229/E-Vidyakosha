@@ -1,58 +1,154 @@
-.glass-card.pdf-viewer {
+.pdf-viewer {
   display: flex;
   flex-direction: column;
   padding: 0;
   overflow: hidden;
-  height: min(80vh, 800px);
-  min-height: 390px;
+  height: min(82vh, 840px);
+  min-height: 420px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
 }
 
-.glass-card.pdf-viewer:fullscreen { height: 100%; border-radius: 0; }
+.pdf-viewer:fullscreen {
+  height: 100%;
+  border-radius: 0;
+  border: none;
+}
 
 .pdf-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 8px 14px;
-  padding: 10px 14px;
-  color: #fff;
-  background: var(--c-midnight);
+  padding: 10px 16px;
+  background: var(--c-surface-subtle);
+  border-bottom: 1px solid var(--c-border);
+  color: var(--c-ink);
 }
 
-.pdf-title, .pdf-controls {
+.pdf-title,
+.pdf-controls {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 13px;
 }
 
-.pdf-title { flex: 1 1 140px; min-width: 0; font-weight: 600; }
-.pdf-title svg { flex-shrink: 0; color: #93c5fd; }
-.pdf-title span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pdf-title {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+
+.pdf-title svg {
+  flex-shrink: 0;
+  color: var(--c-accent);
+}
+
+.pdf-title span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .pdf-controls button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-width: 36px;
-  min-height: 36px;
-  border-radius: 8px;
-  padding: 5px;
-  color: #fff;
-  background: transparent;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  color: var(--c-ink-strong);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  font-size: 12.5px;
+  font-weight: 600;
 }
 
-.pdf-controls button:disabled { opacity: 0.5; }
-.pdf-controls button:not(:disabled):hover, .pdf-controls .pdf-download { background: #354b66; }
-.pdf-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; background: #475569; color: #fff; }
-.pdf-page-wrap { width: max-content; min-width: 100%; text-align: center; }
-.pdf-page canvas { display: block; margin: 0 auto; background: #fff; }
-.pdf-message { width: min(100%, 450px); margin: 12px auto; color: var(--c-midnight); }
-.pdf-message .btn { margin-top: 12px; }
-.pdf-body > [role="status"] { margin: 24px auto; justify-content: center; }
+.pdf-controls button:disabled {
+  opacity: 0.45;
+}
+
+.pdf-controls button:not(:disabled):hover {
+  background: var(--c-surface-hover);
+  border-color: var(--c-border-strong);
+}
+
+.pdf-controls .pdf-download {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: #ffffff;
+  padding: 5px 12px;
+}
+
+.pdf-controls .pdf-download:not(:disabled):hover {
+  background: var(--c-accent-hover);
+  border-color: var(--c-accent-hover);
+}
+
+.pdf-meta-counter {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--c-text-secondary);
+  font-variant-numeric: tabular-nums;
+  padding: 0 4px;
+}
+
+.pdf-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px 14px;
+  background: #e2e8f0;
+  color: var(--c-ink);
+}
+
+.pdf-page-wrap {
+  width: max-content;
+  min-width: 100%;
+  text-align: center;
+}
+
+.pdf-page canvas {
+  display: block;
+  margin: 0 auto;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.14);
+  border-radius: 2px;
+}
+
+.pdf-message {
+  width: min(100%, 450px);
+  margin: 24px auto;
+  color: var(--c-ink);
+}
+
+.pdf-message .btn {
+  margin-top: 12px;
+}
+
+.pdf-body > [role='status'] {
+  margin: 32px auto;
+  justify-content: center;
+}
 
 @media (max-width: 640px) {
-  .pdf-toolbar { padding: 8px 10px; gap: 6px 10px; }
-  .pdf-title { flex-basis: 100%; }
-  .pdf-controls button { min-width: 34px; min-height: 34px; }
+  .pdf-toolbar {
+    padding: 8px 10px;
+    gap: 6px 8px;
+  }
+  .pdf-title {
+    flex-basis: 100%;
+  }
+  .pdf-controls button {
+    min-width: 30px;
+    min-height: 30px;
+  }
 }

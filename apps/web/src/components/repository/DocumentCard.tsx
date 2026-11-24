@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { DocumentDto, SubjectDto } from '../../api/types';
+import type { DocumentDto, DepartmentDto, SubjectDto } from '../../api/types';
 import { TypeBadge } from '../common/Badge';
 import { downloadDocument, getErrorMessage } from '../../api';
 import { useToast } from '../../context/ToastContext';
@@ -9,9 +9,10 @@ import { BookOpen, Download, User, Calendar, Loader2 } from 'lucide-react';
 interface DocumentCardProps {
   document: DocumentDto;
   subject?: SubjectDto | undefined;
+  department?: DepartmentDto | undefined;
 }
 
-export const DocumentCard: React.FC<DocumentCardProps> = ({ document: doc, subject }) => {
+export const DocumentCard: React.FC<DocumentCardProps> = ({ document: doc, subject, department }) => {
   const { showToast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -35,36 +36,35 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ document: doc, subje
   };
 
   return (
-    <article
-      className="glass-card"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        padding: '26px',
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-      }}
-      data-testid={`document-card-${doc.id}`}
-    >
+    <article className="doc-card" data-testid={`document-card-${doc.id}`}>
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            marginBottom: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
           <TypeBadge type={doc.type} />
           {subject && (
             <span
               style={{
                 fontSize: '11px',
-                fontWeight: 700,
-                color: 'var(--c-slate)',
-                background: 'rgba(255, 255, 255, 0.7)',
-                padding: '3px 9px',
-                borderRadius: '6px',
-                border: '1px solid rgba(71, 85, 105, 0.1)',
-                maxWidth: '180px',
+                fontWeight: 600,
+                color: 'var(--c-text-secondary)',
+                background: 'var(--c-surface-subtle)',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                border: '1px solid var(--c-border)',
+                maxWidth: '175px',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}
-              title={subject.name}
+              title={department ? `${department.name} · ${subject.name}` : subject.name}
             >
               {subject.name}
             </span>
@@ -73,21 +73,17 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ document: doc, subje
 
         <h3
           style={{
-            fontSize: '17px',
+            fontSize: '15.5px',
             lineHeight: 1.35,
-            color: 'var(--c-midnight)',
-            marginBottom: '10px',
+            color: 'var(--c-ink)',
+            marginBottom: '8px',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
           }}
         >
-          <Link
-            to={`/library/${doc.id}`}
-            style={{ color: 'inherit' }}
-            title={doc.title}
-          >
+          <Link to={`/library/${doc.id}`} className="table-doc-link" title={doc.title}>
             {doc.title}
           </Link>
         </h3>
@@ -96,20 +92,25 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ document: doc, subje
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
+            gap: '4px',
             fontSize: '12px',
-            color: 'var(--c-text-secondary)',
-            marginBottom: '20px',
+            color: 'var(--c-text-muted)',
+            marginBottom: '16px',
           }}
         >
+          {department && (
+            <div style={{ color: 'var(--c-text-secondary)', fontWeight: 500 }}>
+              {department.name}
+            </div>
+          )}
           {doc.author && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <User size={13} color="var(--c-slate-light)" />
+              <User size={13} color="var(--c-text-subtle)" />
               <span>{doc.author}</span>
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Calendar size={13} color="var(--c-slate-light)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontVariantNumeric: 'tabular-nums' }}>
+            <Calendar size={13} color="var(--c-text-subtle)" />
             <span>{formattedDate}</span>
           </div>
         </div>
@@ -119,35 +120,23 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ document: doc, subje
         style={{
           display: 'flex',
           gap: '8px',
-          borderTop: '1px solid rgba(15, 23, 42, 0.08)',
-          paddingTop: '16px',
+          borderTop: '1px solid var(--c-divider)',
+          paddingTop: '12px',
         }}
       >
-        <Link
-          to={`/library/${doc.id}`}
-          className="btn btn-secondary btn-sm"
-          style={{ flex: 1 }}
-        >
+        <Link to={`/library/${doc.id}`} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
           <BookOpen size={14} /> Read Online
         </Link>
         <button
+          type="button"
           onClick={handleDownload}
           disabled={isDownloading}
-          className="btn btn-ghost btn-sm"
-          style={{
-            padding: '8px 12px',
-            background: 'rgba(255, 255, 255, 0.5)',
-            border: '1px solid var(--c-glass-border)',
-            borderRadius: '9999px',
-          }}
+          className="btn btn-secondary btn-sm"
+          style={{ padding: '6px 10px' }}
           title="Download PDF"
           aria-label={`Download ${doc.title}`}
         >
-          {isDownloading ? (
-            <Loader2 size={15} className="spin-animate" />
-          ) : (
-            <Download size={15} />
-          )}
+          {isDownloading ? <Loader2 size={14} className="spin-animate" /> : <Download size={14} />}
         </button>
       </div>
     </article>

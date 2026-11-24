@@ -21,18 +21,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        width: '100%',
-      }}
-    >
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
       <Search
-        size={18}
-        color="var(--c-slate)"
-        style={{ position: 'absolute', left: '16px', pointerEvents: 'none' }}
+        size={16}
+        color="var(--c-text-muted)"
+        style={{ position: 'absolute', left: '12px', pointerEvents: 'none' }}
       />
       <input
         type="search"
@@ -44,28 +37,26 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         placeholder={placeholder}
         className="form-input"
         style={{
-          paddingLeft: '44px',
-          paddingRight: value ? '42px' : '16px',
-          height: '48px',
-          borderRadius: '9999px',
-          background: 'rgba(255, 255, 255, 0.85)',
-          boxShadow: '0 4px 16px rgba(17, 29, 46, 0.05)',
+          paddingLeft: '38px',
+          paddingRight: value ? '36px' : '12px',
+          height: '40px',
         }}
       />
       {value && (
         <button
+          type="button"
           onClick={() => onChange('')}
           className="btn-ghost"
           aria-label="Clear search"
           style={{
             position: 'absolute',
-            right: '12px',
-            padding: '6px',
-            borderRadius: '50%',
-            color: 'var(--c-slate)',
+            right: '6px',
+            padding: '5px',
+            borderRadius: '4px',
+            color: 'var(--c-text-muted)',
           }}
         >
-          <X size={16} />
+          <X size={15} />
         </button>
       )}
     </div>

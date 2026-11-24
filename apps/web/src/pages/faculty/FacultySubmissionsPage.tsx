@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { listOwnSubmissions, getErrorMessage } from '../../api';
-import type { SubmissionDto } from '../../api/types';
+import {
+  listOwnSubmissions,
+  listDepartments,
+  listSubjects,
+  getErrorMessage,
+} from '../../api';
+import type { SubmissionDto, DepartmentDto, SubjectDto } from '../../api/types';
 import { StatusBadge, TypeBadge } from '../../components/common/Badge';
 import { Spinner } from '../../components/common/Spinner';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -12,35 +17,53 @@ import {
   CheckCircle2,
   XCircle,
   FileText,
-  Calendar,
   MessageSquareWarning,
+  RefreshCw,
 } from 'lucide-react';
 
 export const FacultySubmissionsPage: React.FC = () => {
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
+  const [departments, setDepartments] = useState<DepartmentDto[]>([]);
+  const [subjects, setSubjects] = useState<SubjectDto[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
+    let active = true;
     async function loadSubmissions() {
       setIsLoading(true);
       setError(null);
       try {
-        const data = await listOwnSubmissions();
+        const [data, depts, subs] = await Promise.all([
+          listOwnSubmissions(),
+          listDepartments(),
+          listSubjects(),
+        ]);
+        if (!active) return;
         setSubmissions(data);
+        setDepartments(depts);
+        setSubjects(subs);
       } catch (err: unknown) {
-        setError(getErrorMessage(err));
+        if (active) setError(getErrorMessage(err));
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     }
-    loadSubmissions();
-  }, []);
+    void loadSubmissions();
+    return () => {
+      active = false;
+    };
+  }, [refresh]);
 
   const filtered = submissions.filter((sub) => {
-    if (filterStatus === 'ALL') return true;
-    return sub.status === filterStatus;
+    if (filterStatus !== 'ALL' && sub.status !== filterStatus) return false;
+    if (searchTerm.trim()) {
+      return sub.document.title.toLowerCase().includes(searchTerm.trim().toLowerCase());
+    }
+    return true;
   });
 
   const pendingCount = submissions.filter((s) => s.status === 'PENDING').length;
@@ -48,98 +71,182 @@ export const FacultySubmissionsPage: React.FC = () => {
   const rejectedCount = submissions.filter((s) => s.status === 'REJECTED').length;
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-      {/* Header */}
+    <div>
+      <div className="page-header">
+        <div>
+          <span className="eyebrow">
+            <span className="eyebrow-dot" /> Faculty Contributions
+          </span>
+          <h1>My Submissions</h1>
+          <p className="page-header-subtitle">
+            Track administrative review decisions and feedback for your uploaded academic
+            resources.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setRefresh((v) => v + 1)}
+            disabled={isLoading}
+          >
+            <RefreshCw size={14} className={isLoading ? 'spin-animate' : undefined} /> Refresh
+          </button>
+          <Link to="/faculty/upload" className="btn btn-primary btn-sm">
+            <Upload size={14} /> Upload New Material
+          </Link>
+        </div>
+      </div>
+
+      {/* Metrics Strip */}
+      <div className="metrics-strip">
+        <div className="metric-tile">
+          <div>
+            <div className="metric-label">Total Submitted</div>
+            <div className="metric-value">{submissions.length}</div>
+          </div>
+          <div className="metric-icon">
+            <FileText size={18} />
+          </div>
+        </div>
+        <div className="metric-tile">
+          <div>
+            <div className="metric-label">Under Review</div>
+            <div className="metric-value">{pendingCount}</div>
+          </div>
+          <div className="metric-icon" style={{ color: 'var(--c-warning-icon)' }}>
+            <Clock size={18} />
+          </div>
+        </div>
+        <div className="metric-tile">
+          <div>
+            <div className="metric-label">Approved</div>
+            <div className="metric-value">{approvedCount}</div>
+          </div>
+          <div className="metric-icon" style={{ color: 'var(--c-success-icon)' }}>
+            <CheckCircle2 size={18} />
+          </div>
+        </div>
+        <div className="metric-tile">
+          <div>
+            <div className="metric-label">Rejected</div>
+            <div className="metric-value">{rejectedCount}</div>
+          </div>
+          <div className="metric-icon" style={{ color: 'var(--c-danger-icon)' }}>
+            <XCircle size={18} />
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Bar */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '28px',
           flexWrap: 'wrap',
-          gap: '16px',
+          gap: '12px',
+          marginBottom: '18px',
         }}
       >
-        <div>
-          <span className="eyebrow light">
-            <span className="eyebrow-dot" /> Faculty Contributions
-          </span>
-          <h1 style={{ color: '#ffffff', marginBottom: '6px' }}>My Submissions</h1>
-          <p style={{ color: '#e2e8f0', fontSize: '14px' }}>
-            Track review status and administrative feedback for your contributed academic materials.
-          </p>
+        <div className="segmented-control" role="tablist" aria-label="Submission status filter">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filterStatus === 'ALL'}
+            onClick={() => setFilterStatus('ALL')}
+            className={`segmented-btn ${filterStatus === 'ALL' ? 'active' : ''}`}
+          >
+            All ({submissions.length})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filterStatus === 'PENDING'}
+            onClick={() => setFilterStatus('PENDING')}
+            className={`segmented-btn ${filterStatus === 'PENDING' ? 'active' : ''}`}
+          >
+            Pending ({pendingCount})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filterStatus === 'APPROVED'}
+            onClick={() => setFilterStatus('APPROVED')}
+            className={`segmented-btn ${filterStatus === 'APPROVED' ? 'active' : ''}`}
+          >
+            Approved ({approvedCount})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filterStatus === 'REJECTED'}
+            onClick={() => setFilterStatus('REJECTED')}
+            className={`segmented-btn ${filterStatus === 'REJECTED' ? 'active' : ''}`}
+          >
+            Rejected ({rejectedCount})
+          </button>
         </div>
 
-        <Link to="/faculty/upload" className="btn btn-primary">
-          <Upload size={16} /> Upload New Material
-        </Link>
-      </div>
-
-      {/* Filter Tabs */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '10px',
-          marginBottom: '24px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <button
-          onClick={() => setFilterStatus('ALL')}
-          className={`btn btn-sm ${filterStatus === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
-        >
-          All Submissions ({submissions.length})
-        </button>
-        <button
-          onClick={() => setFilterStatus('PENDING')}
-          className={`btn btn-sm ${filterStatus === 'PENDING' ? 'btn-primary' : 'btn-secondary'}`}
-        >
-          <Clock size={14} /> Pending ({pendingCount})
-        </button>
-        <button
-          onClick={() => setFilterStatus('APPROVED')}
-          className={`btn btn-sm ${filterStatus === 'APPROVED' ? 'btn-primary' : 'btn-secondary'}`}
-        >
-          <CheckCircle2 size={14} /> Approved ({approvedCount})
-        </button>
-        <button
-          onClick={() => setFilterStatus('REJECTED')}
-          className={`btn btn-sm ${filterStatus === 'REJECTED' ? 'btn-primary' : 'btn-secondary'}`}
-        >
-          <XCircle size={14} /> Rejected ({rejectedCount})
-        </button>
+        <input
+          type="search"
+          aria-label="Filter submissions by title"
+          placeholder="Filter your submissions..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="form-input"
+          style={{ width: 'min(100%, 260px)', height: '36px' }}
+        />
       </div>
 
       {error && <ErrorAlert message={error} />}
 
       {isLoading ? (
-        <div style={{ padding: '60px 0', textAlign: 'center' }}>
-          <Spinner size={36} label="Loading your submissions..." />
+        <div className="panel" style={{ padding: '48px 0', textAlign: 'center' }}>
+          <Spinner size={28} label="Loading your submissions..." />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="glass-card">
+        <div className="panel">
           <EmptyState
-            icon={<FileText size={32} />}
+            icon={<FileText size={28} />}
             title={
-              filterStatus === 'ALL'
+              filterStatus === 'ALL' && !searchTerm
                 ? 'No Submissions Yet'
-                : `No ${filterStatus.toLowerCase()} submissions`
+                : `No matching ${filterStatus === 'ALL' ? '' : filterStatus.toLowerCase() + ' '}submissions`
             }
             description={
-              filterStatus === 'ALL'
+              filterStatus === 'ALL' && !searchTerm
                 ? 'You have not uploaded any academic materials yet. Start contributing to make knowledge accessible.'
-                : 'There are no submissions currently matching this status filter.'
+                : 'No submissions match your active filter criteria.'
             }
             action={
-              <Link to="/faculty/upload" className="btn btn-primary btn-sm">
-                <Upload size={14} /> Upload First Document
-              </Link>
+              filterStatus === 'ALL' && !searchTerm ? (
+                <Link to="/faculty/upload" className="btn btn-primary btn-sm">
+                  <Upload size={14} /> Upload First Document
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    setFilterStatus('ALL');
+                    setSearchTerm('');
+                  }}
+                >
+                  Clear filters
+                </button>
+              )
             }
           />
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filtered.map((sub) => {
+            const subject = subjects.find((s) => s.id === sub.document.subjectId);
+            const department = subject
+              ? departments.find((d) => d.id === subject.departmentId)
+              : undefined;
             const submittedDate = new Date(sub.submittedAt).toLocaleDateString(undefined, {
               year: 'numeric',
               month: 'short',
@@ -158,8 +265,8 @@ export const FacultySubmissionsPage: React.FC = () => {
             return (
               <div
                 key={sub.id}
-                className="glass-card"
-                style={{ padding: '24px 28px' }}
+                className="panel"
+                style={{ padding: '18px 22px' }}
                 data-testid={`submission-card-${sub.id}`}
               >
                 <div
@@ -176,26 +283,32 @@ export const FacultySubmissionsPage: React.FC = () => {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '10px',
-                        marginBottom: '10px',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                        marginBottom: '8px',
                       }}
                     >
                       <StatusBadge status={sub.status} />
                       <TypeBadge type={sub.document.type} />
+                      {subject && (
+                        <span style={{ fontSize: '12px', color: 'var(--c-text-muted)', fontWeight: 500 }}>
+                          {department ? `${department.name} · ` : ''}
+                          {subject.name}
+                        </span>
+                      )}
                     </div>
 
-                    <h3 style={{ fontSize: '18px', color: 'var(--c-midnight)', marginBottom: '8px' }}>
-                      {sub.document.title}
-                    </h3>
+                    <h3 style={{ fontSize: '16px', marginBottom: '6px' }}>{sub.document.title}</h3>
 
                     <div
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '20px',
-                        fontSize: '12px',
-                        color: 'var(--c-text-secondary)',
+                        gap: '16px',
+                        fontSize: '12.5px',
+                        color: 'var(--c-text-muted)',
                         flexWrap: 'wrap',
+                        fontVariantNumeric: 'tabular-nums',
                       }}
                     >
                       {sub.document.author && (
@@ -203,49 +316,29 @@ export const FacultySubmissionsPage: React.FC = () => {
                           Author: <strong>{sub.document.author}</strong>
                         </span>
                       )}
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Calendar size={13} /> Submitted: {submittedDate}
-                      </span>
+                      <span>Submitted: {submittedDate}</span>
                       {reviewedDate && <span>Reviewed: {reviewedDate}</span>}
                     </div>
                   </div>
 
                   {sub.status === 'APPROVED' && (
-                    <Link
-                      to={`/library/${sub.document.id}`}
-                      className="btn btn-secondary btn-sm"
-                    >
+                    <Link to={`/library/${sub.document.id}`} className="btn btn-secondary btn-sm">
                       View in Library
                     </Link>
                   )}
                 </div>
 
-                {/* FR-08: Explicit Rejection Reason callout */}
                 {sub.status === 'REJECTED' && sub.rejectionReason && (
                   <div
-                    style={{
-                      marginTop: '16px',
-                      padding: '14px 18px',
-                      borderRadius: '14px',
-                      background: 'rgba(239, 68, 68, 0.08)',
-                      border: '1px solid rgba(239, 68, 68, 0.25)',
-                      color: '#991b1b',
-                      fontSize: '13px',
-                    }}
+                    className="alert alert-error"
+                    style={{ marginTop: '14px', marginBottom: 0 }}
                     data-testid="rejection-reason"
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '7px',
-                        fontWeight: 700,
-                        marginBottom: '4px',
-                      }}
-                    >
-                      <MessageSquareWarning size={16} /> Rejection reason
+                    <MessageSquareWarning size={17} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <div style={{ fontWeight: 700, marginBottom: '2px' }}>Rejection reason</div>
+                      <div>{sub.rejectionReason}</div>
                     </div>
-                    <div>{sub.rejectionReason}</div>
                   </div>
                 )}
               </div>

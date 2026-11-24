@@ -10,6 +10,7 @@ export interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   maxWidth?: string;
+  isDestructive?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -20,6 +21,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   footer,
   maxWidth = '560px',
+  isDestructive = false,
 }) => {
   const dialog = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -42,27 +44,25 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div className="modal-content" style={{ maxWidth }}>
-        <div className="modal-header">
-          <div>
-            <h2 id={titleId} style={{ fontSize: '20px' }}>
-              {title}
-            </h2>
-            {description && (
-              <p id={descriptionId} style={{ fontSize: '13px', marginTop: '4px' }}>
-                {description}
-              </p>
-            )}
-          </div>
+        <div className={`modal-header ${isDestructive ? 'destructive' : ''}`}>
+          <h2 id={titleId}>{title}</h2>
           <button
+            type="button"
             onClick={onClose}
-            className="btn-ghost"
+            className="modal-close-btn"
             aria-label="Close dialog"
-            style={{ padding: '6px', borderRadius: '50%' }}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
-        <div className="modal-body">{children}</div>
+        <div className="modal-body">
+          {description && (
+            <p id={descriptionId} className="modal-description">
+              {description}
+            </p>
+          )}
+          {children}
+        </div>
         {footer && <div className="modal-footer">{footer}</div>}
       </div>
     </div>

@@ -40,13 +40,13 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const getIcon = (type: ToastType) => {
     switch (type) {
       case 'success':
-        return <CheckCircle2 size={18} color="#10b981" />;
+        return <CheckCircle2 size={17} color="#16a34a" style={{ flexShrink: 0 }} />;
       case 'error':
-        return <XCircle size={18} color="#ef4444" />;
+        return <XCircle size={17} color="#dc2626" style={{ flexShrink: 0 }} />;
       case 'warning':
-        return <AlertCircle size={18} color="#f59e0b" />;
+        return <AlertCircle size={17} color="#d97706" style={{ flexShrink: 0 }} />;
       default:
-        return <Info size={18} color="#3b82f6" />;
+        return <Info size={17} color="#0095eb" style={{ flexShrink: 0 }} />;
     }
   };
 
@@ -55,16 +55,16 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       {children}
       <div className="toast-container" aria-live="polite" aria-atomic="true">
         {toasts.map((toast) => (
-          <div key={toast.id} className="toast-item" role="status">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div key={toast.id} className={`toast-item toast-${toast.type}`} role="status">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
               {getIcon(toast.type)}
-              <span>{toast.message}</span>
+              <span style={{ overflowWrap: 'anywhere' }}>{toast.message}</span>
             </div>
             <button
               onClick={() => removeToast(toast.id)}
               className="btn-ghost"
               aria-label="Close notification"
-              style={{ color: '#ffffff', opacity: 0.7, padding: '2px' }}
+              style={{ color: 'var(--c-text-secondary)', padding: '3px', borderRadius: '4px', flexShrink: 0 }}
             >
               <X size={15} />
             </button>

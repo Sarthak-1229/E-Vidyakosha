@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MAX_PDF_BYTES } from '@evidy/shared';
 import { useNavigate } from 'react-router-dom';
 import { submitPdf, listDepartments, listSubjects, getErrorMessage } from '../../api';
 import type { DepartmentDto, SubjectDto, DocumentType, SubmitPdfParams } from '../../api/types';
@@ -8,12 +7,23 @@ import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
 import { Button } from '../../components/common/Button';
 import { ErrorAlert } from '../../components/common/ErrorAlert';
+import { Spinner } from '../../components/common/Spinner';
+import {
+  formatFileSize,
+  validateAuthorInput,
+  validatePdfFileSync,
+  validateTitleInput,
+  verifyPdfBinaryStructure,
+  type PdfPrecheckResult,
+} from '../../lib/validation';
 import {
   UploadCloud,
   FileText,
   X,
   AlertTriangle,
   ArrowRight,
+  CheckCircle2,
+  ShieldCheck,
 } from 'lucide-react';
 
 const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [
@@ -33,18 +43,19 @@ export const FacultyUploadPage: React.FC = () => {
 
   const [departments, setDepartments] = useState<DepartmentDto[]>([]);
   const [subjects, setSubjects] = useState<SubjectDto[]>([]);
+  const [loadingHierarchy, setLoadingHierarchy] = useState(true);
 
-  // Form fields
   const [file, setFile] = useState<File | null>(null);
+  const [precheck, setPrecheck] = useState<PdfPrecheckResult | null>(null);
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [type, setType] = useState<DocumentType>('LECTURE_NOTES');
   const [selectedDeptId, setSelectedDeptId] = useState('');
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
 
-  // Validation & Submission state
   const [fileError, setFileError] = useState<string | null>(null);
   const [titleError, setTitleError] = useState<string | null>(null);
+  const [authorError, setAuthorError] = useState<string | null>(null);
   const [subjectError, setSubjectError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -54,6 +65,7 @@ export const FacultyUploadPage: React.FC = () => {
 
   useEffect(() => {
     let active = true;
+    setLoadingHierarchy(true);
     setHierarchyError(null);
     async function loadHierarchy() {
       try {
@@ -61,84 +73,83 @@ export const FacultyUploadPage: React.FC = () => {
         if (!active) return;
         setDepartments(depts);
         setSubjects(subs);
-        const department = depts[0]?.id ?? '';
-        setSelectedDeptId(department);
-        setSelectedSubjectId(subs.find(item => item.departmentId === department)?.id ?? '');
+        const firstDept = depts.find((d) => subs.some((s) => s.departmentId === d.id)) ?? depts[0];
+        const deptId = firstDept?.id ?? '';
+        setSelectedDeptId(deptId);
+        setSelectedSubjectId(subs.find((item) => item.departmentId === deptId)?.id ?? '');
       } catch (cause) {
         if (active) setHierarchyError(getErrorMessage(cause));
+      } finally {
+        if (active) setLoadingHierarchy(false);
       }
     }
-    loadHierarchy();
-    return () => { active = false; };
+    void loadHierarchy();
+    return () => {
+      active = false;
+    };
   }, [hierarchyRefresh]);
 
-  // Filter subjects by selected department
   const filteredSubjects = selectedDeptId
     ? subjects.filter((s) => s.departmentId === selectedDeptId)
     : subjects;
 
-  const validateFile = (selectedFile: File): boolean => {
+  const processSelectedFile = async (selected: File) => {
     setFileError(null);
+    const syncCheck = validatePdfFileSync(selected);
+    setPrecheck(syncCheck);
 
-    // Size limit <= 50 MiB
-    if (selectedFile.size > MAX_PDF_BYTES) {
-      setFileError('File exceeds maximum allowable size of 50 MiB.');
-      return false;
+    if (!syncCheck.valid) {
+      setFile(null);
+      setFileError(syncCheck.error ?? 'Invalid PDF file.');
+      return;
     }
 
-    // Type must be PDF
-    if (
-      !selectedFile.name.toLowerCase().endsWith('.pdf') &&
-      selectedFile.type !== 'application/pdf'
-    ) {
-      setFileError('Invalid file format. Only PDF documents are accepted.');
-      return false;
+    const binaryCheck = await verifyPdfBinaryStructure(selected);
+    setPrecheck(binaryCheck);
+    if (!binaryCheck.valid) {
+      setFile(null);
+      setFileError(binaryCheck.error ?? 'PDF readability verification failed.');
+      return;
     }
 
-    return true;
+    setFile(selected);
+    if (!title) {
+      setTitle(selected.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ').slice(0, 500));
+      setTitleError(null);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selected = e.target.files[0];
-      if (validateFile(selected)) {
-        setFile(selected);
-        if (!title) {
-          setTitle(selected.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' '));
-        }
-      } else {
-        setFile(null);
-      }
+    const selected = e.target.files?.[0];
+    if (selected) {
+      void processSelectedFile(selected);
     }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const selected = e.dataTransfer.files[0];
-      if (validateFile(selected)) {
-        setFile(selected);
-        if (!title) {
-          setTitle(selected.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' '));
-        }
-      } else {
-        setFile(null);
-      }
+    const selected = e.dataTransfer.files?.[0];
+    if (selected) {
+      void processSelectedFile(selected);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFileError(null);
-    setTitleError(null);
-    setSubjectError(null);
     setServerError(null);
 
-    if (!file) setFileError('Please select a valid PDF file.');
-    if (!title.trim()) setTitleError('Document title is required.');
-    if (!selectedSubjectId) setSubjectError('Please select a subject.');
-    if (!file || !title.trim() || !selectedSubjectId) return;
+    const tErr = validateTitleInput(title);
+    const aErr = validateAuthorInput(author);
+    const fErr = !file ? fileError || 'Please select a valid PDF file.' : null;
+    const sErr = !selectedSubjectId ? 'Please select a course subject.' : null;
+
+    setFileError(fErr);
+    setTitleError(tErr);
+    setAuthorError(aErr);
+    setSubjectError(sErr);
+
+    if (fErr || tErr || aErr || sErr || !file) return;
 
     setIsSubmitting(true);
     try {
@@ -151,7 +162,6 @@ export const FacultyUploadPage: React.FC = () => {
       };
 
       await submitPdf(params);
-
       showToast('Document uploaded successfully and queued for review!', 'success');
       navigate('/faculty/submissions');
     } catch (err: unknown) {
@@ -162,47 +172,42 @@ export const FacultyUploadPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '820px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '28px' }}>
-        <span className="eyebrow light">
-          <span className="eyebrow-dot" /> Faculty Contribution Portal
-        </span>
-        <h1 style={{ color: '#ffffff', marginBottom: '8px' }}>Upload Academic Resource</h1>
-        <p style={{ color: '#e2e8f0', fontSize: '15px' }}>
-          Contribute course materials, lab manuals, and papers. Submissions undergo administrative
-          quality review before appearing in the institutional repository.
-        </p>
+    <div style={{ maxWidth: '840px' }}>
+      <div className="page-header">
+        <div>
+          <span className="eyebrow">
+            <span className="eyebrow-dot" /> Faculty Contribution Portal
+          </span>
+          <h1>Upload Academic Resource</h1>
+          <p className="page-header-subtitle">
+            Submit lecture notes, lab manuals, and papers. Files are verified for format,
+            encryption, and SHA-256 uniqueness before entering the Admin review queue.
+          </p>
+        </div>
       </div>
 
-      <div className="glass-card">
+      <div className="panel">
         {serverError && <ErrorAlert message={serverError} />}
 
-        <form onSubmit={handleSubmit}>
-          {/* Drag & Drop Upload Zone */}
-          <div style={{ marginBottom: '24px' }}>
+        <form onSubmit={handleSubmit} noValidate>
+          {/* PDF Upload Dropzone */}
+          <div style={{ marginBottom: '20px' }}>
             <label className="form-label" style={{ marginBottom: '8px', display: 'block' }}>
-              Academic PDF Document <span style={{ color: '#ef4444' }}>*</span>
+              Academic PDF Document <span style={{ color: 'var(--c-danger)' }}>*</span>
             </label>
 
             {!file ? (
               <div
+                onClick={() => fileInput.current?.click()}
                 onDragOver={(e) => {
                   e.preventDefault();
                   setIsDragging(true);
                 }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
-                style={{
-                  border: `2px dashed ${
-                    isDragging ? '#38bdf8' : fileError ? '#ef4444' : 'rgba(71, 85, 105, 0.3)'
-                  }`,
-                  borderRadius: '20px',
-                  padding: '36px 20px',
-                  textAlign: 'center',
-                  background: isDragging ? 'rgba(56, 189, 248, 0.08)' : 'rgba(255, 255, 255, 0.4)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
+                className={`upload-dropzone ${isDragging ? 'dragging' : ''} ${
+                  fileError ? 'has-error' : ''
+                }`}
               >
                 <input
                   id="pdf-file-input"
@@ -216,23 +221,34 @@ export const FacultyUploadPage: React.FC = () => {
                 />
                 <div
                   style={{
-                    width: '54px',
-                    height: '54px',
-                    borderRadius: '16px',
-                    background: 'rgba(255, 255, 255, 0.8)',
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '6px',
+                    background: 'var(--c-surface)',
+                    border: '1px solid var(--c-border)',
                     display: 'grid',
                     placeItems: 'center',
-                    margin: '0 auto 14px',
-                    color: 'var(--c-slate)',
+                    margin: '0 auto 12px',
+                    color: 'var(--c-accent)',
                   }}
                 >
-                  <UploadCloud size={28} />
+                  <UploadCloud size={22} />
                 </div>
-                <button type="button" className="btn btn-secondary" onClick={() => fileInput.current?.click()}>
+                <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--c-ink)', marginBottom: '8px' }}>
+                  Drag and drop your PDF here, or click to select
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInput.current?.click();
+                  }}
+                >
                   Browse for a PDF
                 </button>
-                <div id="pdf-file-help" style={{ fontSize: '12px', color: 'var(--c-text-muted)', marginTop: '6px' }}>
-                  Maximum file size: 50 MiB <span>·</span> Readable unencrypted PDF only
+                <div id="pdf-file-help" style={{ fontSize: '12px', color: 'var(--c-text-muted)', marginTop: '8px' }}>
+                  Maximum size: 50 MiB · Readable, unencrypted PDF documents only
                 </div>
               </div>
             ) : (
@@ -241,81 +257,121 @@ export const FacultyUploadPage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '16px 20px',
-                  borderRadius: '16px',
-                  background: 'rgba(255, 255, 255, 0.8)',
-                  border: '1px solid var(--c-glass-border)',
+                  padding: '12px 16px',
+                  borderRadius: '6px',
+                  background: 'var(--c-surface-subtle)',
+                  border: '1px solid var(--c-accent-border)',
+                  gap: '12px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                   <div
                     style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '10px',
-                      background: 'rgba(239, 68, 68, 0.1)',
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '4px',
+                      background: 'var(--c-accent-tint)',
+                      color: 'var(--c-accent)',
                       display: 'grid',
                       placeItems: 'center',
-                      color: '#dc2626',
+                      flexShrink: 0,
                     }}
                   >
-                    <FileText size={20} />
+                    <FileText size={18} />
                   </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--c-midnight)' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontSize: '13.5px',
+                        color: 'var(--c-ink)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {file.name}
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--c-text-muted)' }}>
-                      {(file.size / (1024 * 1024)).toFixed(2)} MB <span>·</span> PDF Document
+                      {formatFileSize(file.size)} · Ready for submission
                     </div>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setFile(null)}
+                  onClick={() => {
+                    setFile(null);
+                    setPrecheck(null);
+                    if (fileInput.current) fileInput.current.value = '';
+                  }}
                   className="btn-ghost"
                   aria-label="Remove selected file"
-                  style={{ padding: '6px', borderRadius: '50%' }}
+                  style={{ padding: '6px', borderRadius: '4px' }}
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
             )}
 
+            {precheck && (
+              <div className="validation-checklist" aria-label="PDF validation status">
+                <span className={`validation-check-item ${precheck.checks.format ? 'ok' : 'fail'}`}>
+                  <CheckCircle2 size={13} /> PDF Extension
+                </span>
+                <span className={`validation-check-item ${precheck.checks.sizeLimit ? 'ok' : 'fail'}`}>
+                  <CheckCircle2 size={13} /> ≤ 50 MiB
+                </span>
+                {precheck.checks.signature !== null && (
+                  <span className={`validation-check-item ${precheck.checks.signature ? 'ok' : 'fail'}`}>
+                    <ShieldCheck size={13} /> %PDF Header
+                  </span>
+                )}
+                {precheck.checks.unencrypted !== null && (
+                  <span className={`validation-check-item ${precheck.checks.unencrypted ? 'ok' : 'fail'}`}>
+                    <ShieldCheck size={13} /> Unencrypted
+                  </span>
+                )}
+              </div>
+            )}
+
             {fileError && (
-              <span className="form-error-text" role="alert" style={{ marginTop: '6px' }}>
+              <span className="form-error-text" role="alert" style={{ marginTop: '8px' }}>
                 <AlertTriangle size={13} /> {fileError}
               </span>
             )}
           </div>
 
-          {/* Title */}
           <Input
             id="doc-title"
             label="Document Title"
             type="text"
             maxLength={500}
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (titleError) setTitleError(null);
+            }}
             placeholder="e.g. Distributed Database Management Lab Exercises"
             required
-            error={titleError ? titleError : undefined}
+            error={titleError ?? undefined}
           />
 
-          {/* Author */}
           <Input
             id="doc-author"
             label="Author(s) / Instructor"
             type="text"
             maxLength={250}
             value={author}
-            onChange={(e) => setAuthor(e.target.value)}
+            onChange={(e) => {
+              setAuthor(e.target.value);
+              if (authorError) setAuthorError(null);
+            }}
             placeholder="e.g. Dr. Ramesh Kulkarni, Prof. A. Sharma"
-            hint="Optional. Specify instructor, author, or department cell."
+            hint="Optional (up to 250 characters)."
+            error={authorError ?? undefined}
           />
 
-          {/* Document Type */}
           <Select
             id="doc-type"
             label="Document Classification"
@@ -325,78 +381,101 @@ export const FacultyUploadPage: React.FC = () => {
             options={DOCUMENT_TYPES}
           />
 
-          {/* Department & Subject Selection */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
-              gap: '16px',
-            }}
-          >
-            <div className="form-group">
-              <label htmlFor="doc-dept" className="form-label">
-                Department <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <select
-                id="doc-dept"
-                value={selectedDeptId}
-                onChange={(e) => {
-                  const department = e.target.value;
-                  setSelectedDeptId(department);
-                  setSelectedSubjectId(subjects.find(item => item.departmentId === department)?.id ?? '');
-                }}
-                className="form-select"
-                required
-              >
-                {!departments.length && <option value="">No departments available</option>}
-                {departments.map((dept) => (
-                  <option key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </option>
-                ))}
-              </select>
+          {loadingHierarchy ? (
+            <div style={{ padding: '16px 0' }}>
+              <Spinner size={22} label="Loading academic departments and subjects..." />
             </div>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
+                gap: '14px',
+              }}
+            >
+              <div className="form-group">
+                <label htmlFor="doc-dept" className="form-label">
+                  <span>
+                    Department <span style={{ color: 'var(--c-danger)' }}>*</span>
+                  </span>
+                </label>
+                <select
+                  id="doc-dept"
+                  value={selectedDeptId}
+                  onChange={(e) => {
+                    const department = e.target.value;
+                    setSelectedDeptId(department);
+                    setSelectedSubjectId(
+                      subjects.find((item) => item.departmentId === department)?.id ?? '',
+                    );
+                    setSubjectError(null);
+                  }}
+                  className="form-select"
+                  required
+                >
+                  {!departments.length && <option value="">No departments available</option>}
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="doc-subject" className="form-label">
-                Course / Subject <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <select
-                id="doc-subject"
-                value={selectedSubjectId}
-                onChange={(e) => setSelectedSubjectId(e.target.value)}
-                className={`form-select ${subjectError ? 'has-error' : ''}`}
-                required
-              >
-                {!filteredSubjects.length && <option value="">No subjects available</option>}
-                {filteredSubjects.map((sub) => (
-                  <option key={sub.id} value={sub.id}>
-                    {sub.name}
-                  </option>
-                ))}
-              </select>
-              {subjectError && <span className="form-error-text">{subjectError}</span>}
+              <div className="form-group">
+                <label htmlFor="doc-subject" className="form-label">
+                  <span>
+                    Course / Subject <span style={{ color: 'var(--c-danger)' }}>*</span>
+                  </span>
+                </label>
+                <select
+                  id="doc-subject"
+                  value={selectedSubjectId}
+                  onChange={(e) => {
+                    setSelectedSubjectId(e.target.value);
+                    if (subjectError) setSubjectError(null);
+                  }}
+                  className={`form-select ${subjectError ? 'has-error' : ''}`}
+                  required
+                >
+                  {!filteredSubjects.length && <option value="">No subjects available in department</option>}
+                  {filteredSubjects.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </option>
+                  ))}
+                </select>
+                {subjectError && (
+                  <span className="form-error-text" role="alert">
+                    <AlertTriangle size={13} /> {subjectError}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
           {hierarchyError && (
-            <div>
+            <div style={{ marginBottom: '16px' }}>
               <ErrorAlert message={hierarchyError} />
-              <button type="button" className="btn btn-secondary" onClick={() => setHierarchyRefresh(value => value + 1)}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setHierarchyRefresh((v) => v + 1)}
+              >
                 Retry loading subjects
               </button>
             </div>
           )}
 
-          {/* Submit Action */}
           <div
             style={{
-              marginTop: '32px',
-              paddingTop: '20px',
-              borderTop: '1px solid rgba(15, 23, 42, 0.08)',
+              marginTop: '24px',
+              paddingTop: '18px',
+              borderTop: '1px solid var(--c-divider)',
               display: 'flex',
               justifyContent: 'flex-end',
               flexWrap: 'wrap',
-              gap: '12px',
+              gap: '10px',
             }}
           >
             <Button
@@ -411,7 +490,7 @@ export const FacultyUploadPage: React.FC = () => {
               type="submit"
               variant="primary"
               isLoading={isSubmitting}
-              rightIcon={<ArrowRight size={16} />}
+              rightIcon={<ArrowRight size={15} />}
             >
               Submit for Review
             </Button>

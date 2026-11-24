@@ -17,39 +17,55 @@ export const Pagination: React.FC<PaginationProps> = ({
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   if (totalPages <= 1) return null;
 
-  return (
-    <nav
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '12px',
-        flexWrap: 'wrap',
-        marginTop: '36px',
-      }}
-      aria-label="Pagination Navigation"
-    >
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage <= 1}
-        className="btn btn-secondary btn-sm"
-        aria-label="Previous page"
-      >
-        <ChevronLeft size={16} /> Previous
-      </button>
+  const startItem = (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(totalItems, currentPage * pageSize);
 
-      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--c-slate)' }}>
-        Page {currentPage} of {totalPages} ({totalItems} items)
+  const pageNumbers: number[] = [];
+  const windowStart = Math.max(1, currentPage - 2);
+  const windowEnd = Math.min(totalPages, windowStart + 4);
+  for (let p = Math.max(1, windowEnd - 4); p <= windowEnd; p += 1) {
+    pageNumbers.push(p);
+  }
+
+  return (
+    <nav className="pagination-bar" aria-label="Pagination Navigation">
+      <span>
+        Showing <strong>{startItem}–{endItem}</strong> of <strong>{totalItems}</strong> total
       </span>
 
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage >= totalPages}
-        className="btn btn-secondary btn-sm"
-        aria-label="Next page"
-      >
-        Next <ChevronRight size={16} />
-      </button>
+      <div className="pagination-controls">
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage <= 1}
+          className="page-btn"
+          aria-label="Previous page"
+        >
+          <ChevronLeft size={15} />
+        </button>
+
+        {pageNumbers.map((pageNum) => (
+          <button
+            key={pageNum}
+            type="button"
+            onClick={() => onPageChange(pageNum)}
+            className={`page-btn ${pageNum === currentPage ? 'active' : ''}`}
+            aria-current={pageNum === currentPage ? 'page' : undefined}
+          >
+            {pageNum}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage >= totalPages}
+          className="page-btn"
+          aria-label="Next page"
+        >
+          <ChevronRight size={15} />
+        </button>
+      </div>
     </nav>
   );
 };

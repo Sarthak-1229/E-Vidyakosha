@@ -19,8 +19,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (isLoading) {
     return (
-      <div style={{ padding: '80px 0', display: 'grid', placeItems: 'center' }}>
-        <Spinner size={36} label="Verifying authorization..." />
+      <div style={{ padding: '72px 0', display: 'grid', placeItems: 'center' }}>
+        <Spinner size={30} label="Verifying session authorization..." />
       </div>
     );
   }
@@ -32,36 +32,36 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return (
       <div
-        className="glass-card"
+        className="panel"
         style={{
-          maxWidth: '560px',
-          margin: '60px auto',
+          maxWidth: '520px',
+          margin: '48px auto',
           textAlign: 'center',
-          padding: '48px 32px',
+          padding: '36px 28px',
         }}
       >
         <div
           style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '20px',
-            background: 'rgba(239, 68, 68, 0.12)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
+            width: '52px',
+            height: '52px',
+            borderRadius: '8px',
+            background: 'var(--c-danger-bg)',
+            border: '1px solid var(--c-danger-border)',
             display: 'grid',
             placeItems: 'center',
-            margin: '0 auto 20px',
-            color: '#dc2626',
+            margin: '0 auto 16px',
+            color: 'var(--c-danger)',
           }}
         >
-          <ShieldAlert size={32} />
+          <ShieldAlert size={26} />
         </div>
         <h2>Access Restricted</h2>
-        <p style={{ marginTop: '10px', marginBottom: '24px' }}>
-          Your current role (<strong>{user.role}</strong>) does not have permission to view
-          this administrative workspace.
+        <p style={{ marginTop: '8px', marginBottom: '22px' }}>
+          Your signed-in role (<strong>{user.role}</strong>) does not have permission to open this
+          workspace.
         </p>
         <Link to="/library" className="btn btn-primary">
-          <ArrowLeft size={16} /> Return to Library
+          <ArrowLeft size={15} /> Return to Library
         </Link>
       </div>
     );

@@ -1,17 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { listPendingApprovals, decideUpload, getErrorMessage } from '../../api';
-import type { SubmissionDto, DecisionRequest } from '../../api/types';
+import {
+  listPendingApprovals,
+  decideUpload,
+  listDepartments,
+  listSubjects,
+  getErrorMessage,
+} from '../../api';
+import type { SubmissionDto, DecisionRequest, DepartmentDto, SubjectDto } from '../../api/types';
 import { DecisionModal } from '../../components/admin/DecisionModal';
 import { TypeBadge } from '../../components/common/Badge';
 import { Spinner } from '../../components/common/Spinner';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorAlert } from '../../components/common/ErrorAlert';
 import { useToast } from '../../context/ToastContext';
-import { ShieldCheck, Calendar, User, CheckCircle2, Clock } from 'lucide-react';
+import { ShieldCheck, Calendar, User, CheckCircle2, Clock, RefreshCw } from 'lucide-react';
 
 export const ApprovalsQueuePage: React.FC = () => {
   const { showToast } = useToast();
   const [pendingList, setPendingList] = useState<SubmissionDto[]>([]);
+  const [departments, setDepartments] = useState<DepartmentDto[]>([]);
+  const [subjects, setSubjects] = useState<SubjectDto[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionDto | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -21,8 +30,14 @@ export const ApprovalsQueuePage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await listPendingApprovals();
+      const [data, depts, subs] = await Promise.all([
+        listPendingApprovals(),
+        listDepartments(),
+        listSubjects(),
+      ]);
       setPendingList(data);
+      setDepartments(depts);
+      setSubjects(subs);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
@@ -31,7 +46,7 @@ export const ApprovalsQueuePage: React.FC = () => {
   };
 
   useEffect(() => {
-    loadPending();
+    void loadPending();
   }, []);
 
   const handleDecision = async (decision: 'APPROVED' | 'REJECTED', reason?: string) => {
@@ -43,43 +58,108 @@ export const ApprovalsQueuePage: React.FC = () => {
     await decideUpload(selectedSubmission.id, req);
     showToast(
       `Submission successfully ${decision === 'APPROVED' ? 'approved' : 'rejected'}.`,
-      'success'
+      'success',
     );
-    // Remove decided item from pending queue atomically
     setPendingList((prev) => prev.filter((s) => s.id !== selectedSubmission.id));
     setIsModalOpen(false);
   };
 
+  const resolveHierarchy = (subjectId: string) => {
+    const subject = subjects.find((s) => s.id === subjectId);
+    const department = subject ? departments.find((d) => d.id === subject.departmentId) : undefined;
+    return { subjectName: subject?.name, departmentName: department?.name };
+  };
+
+  const filtered = pendingList.filter((sub) =>
+    searchTerm.trim()
+      ? sub.document.title.toLowerCase().includes(searchTerm.trim().toLowerCase())
+      : true,
+  );
+
+  const selectedHierarchy = selectedSubmission
+    ? resolveHierarchy(selectedSubmission.document.subjectId)
+    : { subjectName: undefined, departmentName: undefined };
+
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '28px' }}>
-        <span className="eyebrow light">
-          <span className="eyebrow-dot" /> Administrative Governance
-        </span>
-        <h1 style={{ color: '#ffffff', marginBottom: '6px' }}>Review & Approvals Queue</h1>
-        <p style={{ color: '#e2e8f0', fontSize: '14px' }}>
-          Inspect submitted course materials. Approving adds the resource to the searchable
-          catalog; rejecting requires a revision note for the instructor.
-        </p>
+    <div>
+      <div className="page-header">
+        <div>
+          <span className="eyebrow">
+            <span className="eyebrow-dot" /> Administrative Governance
+          </span>
+          <h1>Review &amp; Approvals Queue</h1>
+          <p className="page-header-subtitle">
+            Inspect pending faculty metadata submissions. Approved resources publish immediately to
+            the repository; rejections require revision notes for the faculty author.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          onClick={() => void loadPending()}
+          disabled={isLoading}
+        >
+          <RefreshCw size={14} className={isLoading ? 'spin-animate' : undefined} /> Refresh Queue
+        </button>
       </div>
 
-      {error && <ErrorAlert message={error} />}
+      {/* Summary & Search Row */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+          marginBottom: '18px',
+        }}
+      >
+        <div className="badge badge-pending" style={{ padding: '6px 12px', fontSize: '12.5px' }}>
+          <Clock size={14} /> {pendingList.length} pending submission
+          {pendingList.length === 1 ? '' : 's'}
+        </div>
+
+        <input
+          type="search"
+          aria-label="Filter pending submissions by title"
+          placeholder="Filter pending titles..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="form-input"
+          style={{ width: 'min(100%, 280px)', height: '36px' }}
+        />
+      </div>
+
+      {error && (
+        <div style={{ marginBottom: '16px' }}>
+          <ErrorAlert message={error} />
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => void loadPending()}>
+            Retry loading queue
+          </button>
+        </div>
+      )}
 
       {isLoading ? (
-        <div style={{ padding: '60px 0', textAlign: 'center' }}>
-          <Spinner size={36} label="Loading pending review queue..." />
+        <div className="panel" style={{ padding: '48px 0', textAlign: 'center' }}>
+          <Spinner size={28} label="Loading pending review queue..." />
         </div>
-      ) : pendingList.length === 0 ? (
-        <div className="glass-card">
+      ) : filtered.length === 0 ? (
+        <div className="panel">
           <EmptyState
-            icon={<CheckCircle2 size={34} color="#059669" />}
-            title="Review Queue is Clear"
-            description="All faculty submissions have been evaluated. New pending submissions will appear here automatically."
+            icon={<CheckCircle2 size={28} color="var(--c-success-icon)" />}
+            title={pendingList.length === 0 ? 'Review Queue is Clear' : 'No Matching Pending Items'}
+            description={
+              pendingList.length === 0
+                ? 'All faculty submissions have been evaluated. New pending submissions will appear here.'
+                : 'Try adjusting your title filter to see pending items.'
+            }
           />
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {pendingList.map((sub) => {
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {filtered.map((sub) => {
+            const { subjectName, departmentName } = resolveHierarchy(sub.document.subjectId);
             const submittedDate = new Date(sub.submittedAt).toLocaleDateString(undefined, {
               year: 'numeric',
               month: 'short',
@@ -91,51 +171,56 @@ export const ApprovalsQueuePage: React.FC = () => {
             return (
               <div
                 key={sub.id}
-                className="glass-card"
+                className="panel"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '24px 28px',
-                  gap: '20px',
+                  padding: '18px 22px',
+                  gap: '18px',
                   flexWrap: 'wrap',
                 }}
                 data-testid={`pending-card-${sub.id}`}
               >
                 <div style={{ flex: 1, minWidth: 'min(100%, 280px)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
                     <span className="badge badge-pending">
                       <Clock size={12} /> Pending Review
                     </span>
                     <TypeBadge type={sub.document.type} />
+                    {(departmentName || subjectName) && (
+                      <span style={{ fontSize: '12px', color: 'var(--c-text-muted)', fontWeight: 500 }}>
+                        {departmentName ? `${departmentName} · ` : ''}
+                        {subjectName ?? ''}
+                      </span>
+                    )}
                   </div>
 
-                  <h3 style={{ fontSize: '17px', color: 'var(--c-midnight)', marginBottom: '8px' }}>
-                    {sub.document.title}
-                  </h3>
+                  <h3 style={{ fontSize: '16px', marginBottom: '6px' }}>{sub.document.title}</h3>
 
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '18px',
-                      fontSize: '12px',
-                      color: 'var(--c-text-secondary)',
+                      gap: '16px',
+                      fontSize: '12.5px',
+                      color: 'var(--c-text-muted)',
                       flexWrap: 'wrap',
                     }}
                   >
                     {sub.document.author && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <User size={13} /> Author: {sub.document.author}
+                        <User size={13} /> Author: <strong>{sub.document.author}</strong>
                       </span>
                     )}
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontVariantNumeric: 'tabular-nums' }}>
                       <Calendar size={13} /> Submitted: {submittedDate}
                     </span>
                   </div>
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => {
                     setSelectedSubmission(sub);
                     setIsModalOpen(true);
@@ -143,7 +228,7 @@ export const ApprovalsQueuePage: React.FC = () => {
                   className="btn btn-primary btn-sm"
                   data-testid={`review-btn-${sub.id}`}
                 >
-                  <ShieldCheck size={16} /> Review Submission
+                  <ShieldCheck size={15} /> Review Submission
                 </button>
               </div>
             );
@@ -151,10 +236,11 @@ export const ApprovalsQueuePage: React.FC = () => {
         </div>
       )}
 
-      {/* Decision Review Modal */}
       <DecisionModal
         key={selectedSubmission?.id ?? 'closed'}
         submission={selectedSubmission}
+        subjectName={selectedHierarchy.subjectName}
+        departmentName={selectedHierarchy.departmentName}
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);

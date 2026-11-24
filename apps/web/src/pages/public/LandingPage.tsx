@@ -2,136 +2,202 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
-  BookOpenText,
+  BookOpen,
   FileCheck2,
   FileSearch,
+  FolderTree,
   GraduationCap,
-  LibraryBig,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export const LandingPage: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+
   return (
     <>
-      {/* Hero Section */}
-      <section className="hero" aria-labelledby="hero-title" style={{ minHeight: '620px' }}>
+      <section className="hero" aria-labelledby="hero-title">
         <div className="hero-copy">
-          <span className="eyebrow light">
-            <span className="eyebrow-dot" /> Academic Reference Repository
+          <span className="eyebrow">
+            <span className="eyebrow-dot" /> MIT Academy of Engineering · Repository
           </span>
-          <h1 id="hero-title" style={{ color: '#ffffff' }}>
-            Knowledge, <em>beautifully</em> within reach.
+          <h1 id="hero-title">
+            Academic Knowledge, <span>Structured &amp; Verified.</span>
           </h1>
-          <p style={{ color: '#e2e8f0' }}>
-            A curated institutional repository for lecture notes, reference books, lab manuals,
-            and research publications. Clean, structured, and verified by department faculty.
+          <p>
+            A unified institutional catalog for lecture notes, laboratory manuals, question banks,
+            reference books, and research papers—organized by department and subject, and vetted by
+            faculty reviewers.
           </p>
-          <div className="hero-actions" style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-            <Link to="/library" className="btn btn-primary btn-lg">
-              Explore Library <ArrowRight size={18} />
+
+          <div className="hero-actions">
+            <Link to={isAuthenticated ? '/library' : '/library'} className="btn btn-primary btn-lg">
+              Explore Library <ArrowRight size={16} />
             </Link>
             <Link to="/register" className="btn btn-secondary btn-lg">
               Student Sign Up
             </Link>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginTop: '24px',
-              fontSize: '12px',
-              color: '#cbd5e1',
-            }}
-          >
-            <Sparkles size={14} color="#93c5fd" />
-            <span>MSS v2.0 Compliant <span>·</span> Exclusively for MIT Academy of Engineering</span>
+
+          <div className="hero-meta-note">
+            <ShieldCheck size={15} color="var(--c-success-icon)" />
+            <span>Authenticated access · SHA-256 duplicate protection · GridFS archival storage</span>
           </div>
         </div>
 
-        {/* Hero Visual Card */}
-        <div className="hero-art" aria-label="Academic catalog showcase">
-          <div className="orb" />
-          <div className="glass float-card">
-            <div className="float-eyebrow">
-              <LibraryBig size={18} /> STUDY SPACE
+        {/* Clean Architectural Console Preview Window */}
+        <div className="console-preview-window" aria-label="Academic catalog preview">
+          <div className="preview-window-bar">
+            <div className="preview-window-dots" aria-hidden="true">
+              <span />
+              <span />
+              <span />
             </div>
-            <h2>Everything in its place.</h2>
-            <p>Access department-approved course material without the noise.</p>
-            <div className="preview-search">
-              <FileSearch size={18} /> Search course notes, papers, question banks...
-            </div>
-            <div className="preview-list">
-              <span>
-                <FileCheck2 size={18} /> Lecture notes <small>CURATED</small>
-              </span>
-              <span>
-                <BookOpenText size={18} /> Lab manuals <small>VERIFIED</small>
-              </span>
-            </div>
+            <span>E-Vidyakosha Console — Library Catalog</span>
+            <span style={{ color: 'var(--c-accent-pressed)' }}>MSS v2.0</span>
           </div>
-          <div className="mini-glass">
-            <ShieldCheck size={20} color="#059669" />
-            <span>Faculty Verified Resources</span>
+
+          <div className="preview-console-grid">
+            <div className="preview-sidebar">
+              <div
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: 'var(--c-text-subtle)',
+                  letterSpacing: '0.8px',
+                  textTransform: 'uppercase',
+                  padding: '2px 6px 6px',
+                }}
+              >
+                Hierarchy
+              </div>
+              <div className="preview-side-item active">
+                <BookOpen size={13} /> Academic Library
+              </div>
+              <div className="preview-side-item">
+                <span className="tree-dot" style={{ background: '#0095eb' }} /> Computer Engg.
+              </div>
+              <div className="preview-side-item">
+                <span className="tree-dot" style={{ background: '#10b981' }} /> E&amp;TC Engg.
+              </div>
+              <div className="preview-side-item">
+                <span className="tree-dot" style={{ background: '#8b5cf6' }} /> Mechanical Engg.
+              </div>
+              <div className="preview-side-item">
+                <span className="tree-dot" style={{ background: '#f59e0b' }} /> Civil Engg.
+              </div>
+            </div>
+
+            <div className="preview-main">
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid var(--c-divider)',
+                  paddingBottom: '10px',
+                }}
+              >
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--c-ink)' }}>
+                  Approved Course Documents
+                </span>
+                <span className="badge badge-type">Department Verified</span>
+              </div>
+
+              <div className="preview-table-row">
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--c-ink)' }}>Data Structures &amp; Graphs</div>
+                  <div style={{ fontSize: '11px', color: 'var(--c-text-muted)' }}>Computer Engineering</div>
+                </div>
+                <span className="badge badge-type">Lecture Notes</span>
+                <span className="badge badge-approved">Approved</span>
+              </div>
+
+              <div className="preview-table-row">
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--c-ink)' }}>Database Normalization Manual</div>
+                  <div style={{ fontSize: '11px', color: 'var(--c-text-muted)' }}>DBMS Lab</div>
+                </div>
+                <span className="badge badge-type">Lab Manual</span>
+                <span className="badge badge-approved">Approved</span>
+              </div>
+
+              <div className="preview-table-row">
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--c-ink)' }}>Digital Signal Processing</div>
+                  <div style={{ fontSize: '11px', color: 'var(--c-text-muted)' }}>E&amp;TC Engineering</div>
+                </div>
+                <span className="badge badge-type">Question Paper</span>
+                <span className="badge badge-approved">Approved</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Grid */}
       <section className="section" id="features">
         <div className="section-head">
-          <span className="eyebrow">DESIGNED FOR ACADEMIC RIGOR</span>
-          <h2>A single repository for every student & faculty member.</h2>
+          <span className="eyebrow">Institutional Architecture</span>
+          <h2>Structured academic workflows for every campus role.</h2>
         </div>
+
         <div className="feature-grid">
-          <article className="feature glass">
+          <article className="feature-card">
             <div className="icon-well">
-              <FileSearch size={24} />
+              <FileSearch size={20} />
             </div>
-            <h3>Approved Discovery</h3>
+            <h3>Indexed Catalog Discovery</h3>
             <p>
-              Instantly search through officially approved academic literature filtered by Department,
-              Subject, and resource classification.
+              Search approved titles and cascade across Departments, Subjects, and 7 document
+              classifications with instant inline PDF reading and authorized downloads.
             </p>
           </article>
-          <article className="feature glass">
+
+          <article className="feature-card">
             <div className="icon-well">
-              <GraduationCap size={24} />
+              <GraduationCap size={20} />
             </div>
-            <h3>Faculty Contributions</h3>
+            <h3>Faculty Publishing Portal</h3>
             <p>
-              Faculty members upload up to 50 MiB academic PDFs with full status tracking across
-              pending, approved, and revision states.
+              Upload unencrypted PDFs up to 50 MiB with pre-upload integrity checks, automatic
+              SHA-256 deduplication, and transparent review-status tracking.
             </p>
           </article>
-          <article className="feature glass">
+
+          <article className="feature-card">
             <div className="icon-well">
-              <ShieldCheck size={24} />
+              <FolderTree size={20} />
             </div>
-            <h3>Institutional Curation</h3>
+            <h3>Administrative Governance</h3>
             <p>
-              Department administrators review submissions, enforce academic standards, and maintain
-              subject hierarchies with complete integrity.
+              Evaluate pending submissions atomically, enforce rejection notes, manage user roles,
+              and safeguard department-to-subject referential integrity.
             </p>
           </article>
         </div>
       </section>
 
-      {/* How it Works / Roles Banner */}
-      <section className="section how" id="how-it-works" style={{ paddingTop: 0 }}>
-        <div className="glass how-card">
-          <div>
-            <span className="eyebrow">THREE DISTINCT ACTORS</span>
-            <h2>Connected learning workflows.</h2>
-            <p>
-              Students search, read inline and download materials. Faculty submit course material
-              and track review decisions. Administrators safeguard quality and maintain structure.
+      <section className="section" id="how-it-works">
+        <div className="how-card">
+          <div style={{ maxWidth: '640px' }}>
+            <span className="eyebrow">
+              <FileCheck2 size={13} /> Role-Based Institutional Access
+            </span>
+            <h2>Ready to access the institutional catalog?</h2>
+            <p style={{ marginTop: '6px' }}>
+              Students with an <strong>@mitaoe.ac.in</strong> email can self-register immediately.
+              Faculty and departmental administrators sign in with institution-provisioned
+              credentials.
             </p>
           </div>
-          <Link to="/sign-in" className="btn btn-primary btn-lg">
-            Access Portal <ArrowRight size={18} />
-          </Link>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <Link to="/sign-in" className="btn btn-primary btn-lg">
+              Sign In <ArrowRight size={16} />
+            </Link>
+            <Link to="/register" className="btn btn-secondary btn-lg">
+              Student Registration
+            </Link>
+          </div>
         </div>
       </section>
     </>

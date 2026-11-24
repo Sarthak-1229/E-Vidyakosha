@@ -14,14 +14,22 @@ import { ConfirmDialog } from '../../components/admin/ConfirmDialog';
 import { RoleBadge } from '../../components/common/Badge';
 import { Pagination } from '../../components/repository/Pagination';
 import { Spinner } from '../../components/common/Spinner';
+import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorAlert } from '../../components/common/ErrorAlert';
 import { useToast } from '../../context/ToastContext';
-import { UserPlus, Trash2, Edit3 } from 'lucide-react';
+import {
+  validateEmailInput,
+  validateNameInput,
+  validatePasswordInput,
+} from '../../lib/validation';
+import { UserPlus, Trash2, Edit3, Users } from 'lucide-react';
 
 export const UserManagementPage: React.FC = () => {
   const { showToast } = useToast();
 
   const [users, setUsers] = useState<PublicUser[]>([]);
+  const [roleFilter, setRoleFilter] = useState<string>('ALL');
+  const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [refresh, setRefresh] = useState(0);
@@ -35,16 +43,21 @@ export const UserManagementPage: React.FC = () => {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<'FACULTY' | 'ADMIN'>('FACULTY');
+  const [newNameError, setNewNameError] = useState<string | undefined>();
+  const [newEmailError, setNewEmailError] = useState<string | undefined>();
+  const [newPasswordError, setNewPasswordError] = useState<string | undefined>();
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   // Edit Role Modal
   const [editingUser, setEditingUser] = useState<PublicUser | null>(null);
   const [selectedRole, setSelectedRole] = useState<UserRole>('STUDENT');
+  const [roleError, setRoleError] = useState<string | null>(null);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
   // Delete User Confirmation
   const [deletingUser, setDeletingUser] = useState<PublicUser | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
@@ -64,21 +77,23 @@ export const UserManagementPage: React.FC = () => {
       }
     }
     void load();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [page, refresh]);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError(null);
 
-    if (!newName.trim() || !newEmail.trim() || !newPassword) {
-      setCreateError('Please fill in all required fields.');
-      return;
-    }
-    if (newPassword.length < 8) {
-      setCreateError('Password must be at least 8 characters.');
-      return;
-    }
+    const nErr = validateNameInput(newName, 'Full name');
+    const eErr = validateEmailInput(newEmail);
+    const pErr = validatePasswordInput(newPassword, { minLength: 8 });
+    setNewNameError(nErr ?? undefined);
+    setNewEmailError(eErr ?? undefined);
+    setNewPasswordError(pErr ?? undefined);
+
+    if (nErr || eErr || pErr) return;
 
     setIsCreating(true);
     try {
@@ -90,7 +105,7 @@ export const UserManagementPage: React.FC = () => {
       });
 
       setPage(1);
-      setRefresh(value => value + 1);
+      setRefresh((value) => value + 1);
       showToast(`Account for ${envelope.user.name} created.`, 'success');
       setIsCreateOpen(false);
       setNewName('');
@@ -107,14 +122,15 @@ export const UserManagementPage: React.FC = () => {
     e.preventDefault();
     if (!editingUser) return;
 
+    setRoleError(null);
     setIsUpdatingRole(true);
     try {
       const envelope = await updateUserRole(editingUser.id, { role: selectedRole });
-      setRefresh(value => value + 1);
+      setRefresh((value) => value + 1);
       showToast(`Updated role for ${envelope.user.name} to ${selectedRole}.`, 'success');
       setEditingUser(null);
     } catch (err: unknown) {
-      showToast(getErrorMessage(err), 'error');
+      setRoleError(getErrorMessage(err));
     } finally {
       setIsUpdatingRole(false);
     }
@@ -123,58 +139,127 @@ export const UserManagementPage: React.FC = () => {
   const handleConfirmDelete = async () => {
     if (!deletingUser) return;
     setIsDeleting(true);
+    setDeleteError(null);
     try {
       await deleteUser(deletingUser.id);
       if (users.length === 1 && page > 1) setPage(page - 1);
-      setRefresh(value => value + 1);
+      setRefresh((value) => value + 1);
       showToast('User account successfully removed.', 'success');
       setDeletingUser(null);
     } catch (err: unknown) {
-      showToast(getErrorMessage(err), 'error');
+      setDeleteError(getErrorMessage(err));
     } finally {
       setIsDeleting(false);
     }
   };
 
+  const filteredUsers = users.filter((u) => {
+    if (roleFilter !== 'ALL' && u.role !== roleFilter) return false;
+    if (searchTerm.trim()) {
+      const term = searchTerm.trim().toLowerCase();
+      return u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term);
+    }
+    return true;
+  });
+
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '28px',
-          flexWrap: 'wrap',
-          gap: '16px',
-        }}
-      >
+    <div>
+      <div className="page-header">
         <div>
-          <span className="eyebrow light">
+          <span className="eyebrow">
             <span className="eyebrow-dot" /> Access Governance
           </span>
-          <h1 style={{ color: '#ffffff', marginBottom: '6px' }}>User Accounts</h1>
-          <p style={{ color: '#e2e8f0', fontSize: '14px' }}>
-            Manage institutional users, provision faculty and admin credentials, and modify role
-            privileges.
+          <h1>User Accounts</h1>
+          <p className="page-header-subtitle">
+            Manage institutional accounts, provision Faculty and Admin credentials, and administer
+            role permissions with referential protection.
           </p>
         </div>
 
         <Button
           variant="primary"
+          size="sm"
           onClick={() => {
             setCreateError(null);
+            setNewNameError(undefined);
+            setNewEmailError(undefined);
+            setNewPasswordError(undefined);
             setIsCreateOpen(true);
           }}
         >
-          <UserPlus size={16} /> Create Privileged User
+          <UserPlus size={15} /> Create Privileged User
         </Button>
       </div>
 
-      {error && <div><ErrorAlert message={error} /><button className="btn btn-secondary" onClick={() => setRefresh(value => value + 1)}>Retry</button></div>}
+      {/* Role Filter & Search */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+          marginBottom: '18px',
+        }}
+      >
+        <div className="segmented-control" role="tablist" aria-label="Filter users by role">
+          {(['ALL', 'STUDENT', 'FACULTY', 'ADMIN'] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              role="tab"
+              aria-selected={roleFilter === r}
+              onClick={() => setRoleFilter(r)}
+              className={`segmented-btn ${roleFilter === r ? 'active' : ''}`}
+            >
+              {r === 'ALL' ? `All (${total})` : r}
+            </button>
+          ))}
+        </div>
+
+        <input
+          type="search"
+          aria-label="Filter accounts by name or email"
+          placeholder="Filter page by name or email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="form-input"
+          style={{ width: 'min(100%, 260px)', height: '36px' }}
+        />
+      </div>
+
+      {error && (
+        <div style={{ marginBottom: '16px' }}>
+          <ErrorAlert message={error} />
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setRefresh((v) => v + 1)}>
+            Retry
+          </button>
+        </div>
+      )}
 
       {error ? null : isLoading ? (
-        <div style={{ padding: '60px 0', textAlign: 'center' }}>
-          <Spinner size={36} label="Loading users..." />
+        <div className="panel" style={{ padding: '48px 0', textAlign: 'center' }}>
+          <Spinner size={28} label="Loading users..." />
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="panel">
+          <EmptyState
+            icon={<Users size={28} />}
+            title="No Accounts Match Filter"
+            description="No user accounts on the current page match your filter selection."
+            action={
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  setRoleFilter('ALL');
+                  setSearchTerm('');
+                }}
+              >
+                Clear filters
+              </button>
+            }
+          />
         </div>
       ) : (
         <div className="table-wrapper" tabIndex={0} role="region" aria-label="User accounts table">
@@ -189,7 +274,7 @@ export const UserManagementPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => {
+              {filteredUsers.map((u) => {
                 const dateStr = new Date(u.createdAt).toLocaleDateString();
 
                 return (
@@ -199,25 +284,31 @@ export const UserManagementPage: React.FC = () => {
                     <td>
                       <RoleBadge role={u.role} />
                     </td>
-                    <td>{dateStr}</td>
+                    <td style={{ fontVariantNumeric: 'tabular-nums' }}>{dateStr}</td>
                     <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px' }}>
+                      <div style={{ display: 'inline-flex', gap: '4px' }}>
                         <button
+                          type="button"
                           onClick={() => {
                             setEditingUser(u);
                             setSelectedRole(u.role);
+                            setRoleError(null);
                           }}
                           className="btn-ghost"
-                          style={{ padding: '6px', color: 'var(--c-slate)' }}
+                          style={{ padding: '6px', borderRadius: '4px', color: 'var(--c-text-secondary)' }}
                           title="Change user role"
                           aria-label={`Change role for ${u.name}`}
                         >
                           <Edit3 size={15} />
                         </button>
                         <button
-                          onClick={() => setDeletingUser(u)}
+                          type="button"
+                          onClick={() => {
+                            setDeleteError(null);
+                            setDeletingUser(u);
+                          }}
                           className="btn-ghost"
-                          style={{ padding: '6px', color: '#dc2626' }}
+                          style={{ padding: '6px', borderRadius: '4px', color: 'var(--c-danger)' }}
                           title="Delete user"
                           aria-label={`Delete ${u.name}`}
                         >
@@ -240,43 +331,60 @@ export const UserManagementPage: React.FC = () => {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         title="Create Privileged Account"
-        description="Create an account for a Faculty member or administrator."
+        description="Provision a verified Faculty member or System Administrator account."
       >
-        <form onSubmit={handleCreateUser}>
+        <form onSubmit={handleCreateUser} noValidate>
           {createError && <ErrorAlert message={createError} />}
 
           <Input
             id="new-user-name"
             label="Full Name"
+            maxLength={120}
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onChange={(e) => {
+              setNewName(e.target.value);
+              if (newNameError) setNewNameError(undefined);
+            }}
             placeholder="Dr. S. Kulkarni"
             required
+            error={newNameError}
           />
 
           <Input
             id="new-user-email"
             label="Email Address"
             type="email"
+            maxLength={254}
             value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
+            onChange={(e) => {
+              setNewEmail(e.target.value);
+              if (newEmailError) setNewEmailError(undefined);
+            }}
             placeholder="faculty.name@mitaoe.ac.in"
             required
+            error={newEmailError}
           />
 
           <Input
             id="new-user-password"
-            label="Password (min 8 characters)"
+            label="Password (8–128 characters)"
             type="password"
+            maxLength={128}
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="••••••••"
+            onChange={(e) => {
+              setNewPassword(e.target.value);
+              if (newPasswordError) setNewPasswordError(undefined);
+            }}
+            placeholder="Minimum 8 characters"
             required
+            error={newPasswordError}
           />
 
           <div className="form-group">
             <label htmlFor="new-user-role" className="form-label">
-              Role Assignment <span style={{ color: '#ef4444' }}>*</span>
+              <span>
+                Role Assignment <span style={{ color: 'var(--c-danger)' }}>*</span>
+              </span>
             </label>
             <select
               id="new-user-role"
@@ -290,7 +398,7 @@ export const UserManagementPage: React.FC = () => {
             </select>
           </div>
 
-          <div className="modal-footer">
+          <div className="modal-footer" style={{ margin: '18px -22px -16px' }}>
             <Button
               type="button"
               variant="secondary"
@@ -314,9 +422,13 @@ export const UserManagementPage: React.FC = () => {
         description={`Update role privileges for ${editingUser?.name} (${editingUser?.email}).`}
       >
         <form onSubmit={handleUpdateRole}>
+          {roleError && <ErrorAlert message={roleError} />}
+
           <div className="form-group">
             <label htmlFor="edit-user-role" className="form-label">
-              Assigned Role <span style={{ color: '#ef4444' }}>*</span>
+              <span>
+                Assigned Role <span style={{ color: 'var(--c-danger)' }}>*</span>
+              </span>
             </label>
             <select
               id="edit-user-role"
@@ -331,7 +443,7 @@ export const UserManagementPage: React.FC = () => {
             </select>
           </div>
 
-          <div className="modal-footer">
+          <div className="modal-footer" style={{ margin: '18px -22px -16px' }}>
             <Button
               type="button"
               variant="secondary"
@@ -350,12 +462,16 @@ export const UserManagementPage: React.FC = () => {
       {/* Confirm Delete User */}
       <ConfirmDialog
         isOpen={!!deletingUser}
-        onClose={() => setDeletingUser(null)}
+        onClose={() => {
+          setDeletingUser(null);
+          setDeleteError(null);
+        }}
         onConfirm={handleConfirmDelete}
         title="Delete User Account"
-        message={`Are you sure you want to delete ${deletingUser?.name}? If this user has active document uploads or records, the system will block deletion to protect academic integrity.`}
+        message={`Are you sure you want to delete ${deletingUser?.name}? Accounts referenced by existing document uploads or reviews are protected.`}
         confirmLabel="Delete User"
         isLoading={isDeleting}
+        error={deleteError}
       />
     </div>
   );

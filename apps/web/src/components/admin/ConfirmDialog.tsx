@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
+import { ErrorAlert } from '../common/ErrorAlert';
 import { AlertTriangle } from 'lucide-react';
 
 interface ConfirmDialogProps {
@@ -12,6 +13,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   isDestructive?: boolean;
   isLoading?: boolean;
+  error?: string | null;
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -23,40 +25,50 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   confirmLabel = 'Confirm',
   isDestructive = true,
   isLoading = false,
+  error,
 }) => {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="480px">
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', margin: '8px 0 20px' }}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      maxWidth="460px"
+      isDestructive={isDestructive}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            variant={isDestructive ? 'danger' : 'primary'}
+            onClick={onConfirm}
+            isLoading={isLoading}
+          >
+            {confirmLabel}
+          </Button>
+        </>
+      }
+    >
+      {error && <ErrorAlert message={error} />}
+      <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
         <div
           style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            background: isDestructive ? 'rgba(239, 68, 68, 0.12)' : 'rgba(59, 130, 246, 0.12)',
+            width: '38px',
+            height: '38px',
+            borderRadius: '6px',
+            background: isDestructive ? 'var(--c-danger-bg)' : 'var(--c-info-bg)',
+            border: `1px solid ${isDestructive ? 'var(--c-danger-border)' : 'var(--c-info-border)'}`,
             display: 'grid',
             placeItems: 'center',
-            color: isDestructive ? '#dc2626' : '#2563eb',
+            color: isDestructive ? 'var(--c-danger)' : 'var(--c-accent)',
             flexShrink: 0,
           }}
         >
-          <AlertTriangle size={22} />
+          <AlertTriangle size={20} />
         </div>
-        <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--c-text-primary)' }}>
+        <p style={{ fontSize: '13.5px', lineHeight: 1.6, color: 'var(--c-text-primary)' }}>
           {message}
         </p>
-      </div>
-
-      <div className="modal-footer">
-        <Button variant="secondary" onClick={onClose} disabled={isLoading}>
-          Cancel
-        </Button>
-        <Button
-          variant={isDestructive ? 'danger' : 'primary'}
-          onClick={onConfirm}
-          isLoading={isLoading}
-        >
-          {confirmLabel}
-        </Button>
       </div>
     </Modal>
   );

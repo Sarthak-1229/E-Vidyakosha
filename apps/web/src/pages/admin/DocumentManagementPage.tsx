@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   searchApprovedDocuments,
   updateDocumentMetadata,
   deleteDocument,
+  listDepartments,
   listSubjects,
   getErrorMessage,
 } from '../../api';
-import type { DocumentDto, SubjectDto, DocumentType } from '../../api/types';
+import type { DocumentDto, DepartmentDto, SubjectDto, DocumentType } from '../../api/types';
 import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
 import { Button } from '../../components/common/Button';
@@ -14,15 +16,20 @@ import { Modal } from '../../components/common/Modal';
 import { ConfirmDialog } from '../../components/admin/ConfirmDialog';
 import { TypeBadge } from '../../components/common/Badge';
 import { Pagination } from '../../components/repository/Pagination';
+import { DOCUMENT_TYPES_OPTIONS } from '../../components/repository/HierarchyFilter';
 import { Spinner } from '../../components/common/Spinner';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorAlert } from '../../components/common/ErrorAlert';
 import { useToast } from '../../context/ToastContext';
+import { validateAuthorInput, validateTitleInput } from '../../lib/validation';
 import {
   FileSpreadsheet,
   Edit2,
   Trash2,
   Search,
+  ExternalLink,
+  RotateCcw,
+  Lock,
 } from 'lucide-react';
 
 const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [
@@ -39,8 +46,14 @@ export const DocumentManagementPage: React.FC = () => {
   const { showToast } = useToast();
 
   const [documents, setDocuments] = useState<DocumentDto[]>([]);
+  const [departments, setDepartments] = useState<DepartmentDto[]>([]);
   const [subjects, setSubjects] = useState<SubjectDto[]>([]);
+
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filterDeptId, setFilterDeptId] = useState<string>('');
+  const [filterSubjectId, setFilterSubjectId] = useState<string>('');
+  const [filterType, setFilterType] = useState<string>('');
+
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [refresh, setRefresh] = useState(0);
@@ -53,11 +66,16 @@ export const DocumentManagementPage: React.FC = () => {
   const [editTitle, setEditTitle] = useState('');
   const [editAuthor, setEditAuthor] = useState('');
   const [editType, setEditType] = useState<DocumentType>('LECTURE_NOTES');
+  const [editDeptId, setEditDeptId] = useState('');
   const [editSubjectId, setEditSubjectId] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editTitleError, setEditTitleError] = useState<string | undefined>();
+  const [editAuthorError, setEditAuthorError] = useState<string | undefined>();
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // Deletion state
   const [deletingDoc, setDeletingDoc] = useState<DocumentDto | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
@@ -66,11 +84,20 @@ export const DocumentManagementPage: React.FC = () => {
     setError(null);
     async function load() {
       try {
-        const [response, courses] = await Promise.all([
-          searchApprovedDocuments({ q: searchQuery, page, pageSize }), listSubjects(),
+        const [response, depts, courses] = await Promise.all([
+          searchApprovedDocuments({
+            q: searchQuery,
+            subjectId: filterSubjectId || undefined,
+            type: filterType ? (filterType as DocumentType) : undefined,
+            page,
+            pageSize,
+          }),
+          listDepartments(),
+          listSubjects(),
         ]);
         if (!active) return;
         setDocuments(response.items);
+        setDepartments(depts);
         setSubjects(courses);
         setTotal(response.total);
       } catch (cause) {
@@ -80,20 +107,37 @@ export const DocumentManagementPage: React.FC = () => {
       }
     }
     void load();
-    return () => { active = false; };
-  }, [page, refresh, searchQuery]);
+    return () => {
+      active = false;
+    };
+  }, [page, refresh, searchQuery, filterSubjectId, filterType]);
 
   const openEditModal = (doc: DocumentDto) => {
+    const subj = subjects.find((s) => s.id === doc.subjectId);
     setEditingDoc(doc);
     setEditTitle(doc.title);
     setEditAuthor(doc.author || '');
     setEditType(doc.type);
+    setEditDeptId(subj?.departmentId ?? departments[0]?.id ?? '');
     setEditSubjectId(doc.subjectId);
+    setEditError(null);
+    setEditTitleError(undefined);
+    setEditAuthorError(undefined);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingDoc || !editTitle.trim()) return;
+    if (!editingDoc) return;
+
+    const tErr = validateTitleInput(editTitle);
+    const aErr = validateAuthorInput(editAuthor);
+    setEditTitleError(tErr ?? undefined);
+    setEditAuthorError(aErr ?? undefined);
+    setEditError(null);
+    if (tErr || aErr || !editSubjectId) {
+      if (!editSubjectId) setEditError('Please choose a valid subject.');
+      return;
+    }
 
     setIsSavingEdit(true);
     try {
@@ -105,11 +149,11 @@ export const DocumentManagementPage: React.FC = () => {
       });
 
       setPage(1);
-      setRefresh(value => value + 1);
+      setRefresh((value) => value + 1);
       showToast('Document metadata updated successfully.', 'success');
       setEditingDoc(null);
     } catch (err: unknown) {
-      showToast(getErrorMessage(err), 'error');
+      setEditError(getErrorMessage(err));
     } finally {
       setIsSavingEdit(false);
     }
@@ -118,61 +162,214 @@ export const DocumentManagementPage: React.FC = () => {
   const handleConfirmDelete = async () => {
     if (!deletingDoc) return;
     setIsDeleting(true);
+    setDeleteError(null);
     try {
       await deleteDocument(deletingDoc.id);
       if (documents.length === 1 && page > 1) setPage(page - 1);
-      setRefresh(value => value + 1);
+      setRefresh((value) => value + 1);
       showToast('Document permanently removed from repository.', 'success');
       setDeletingDoc(null);
     } catch (err: unknown) {
-      showToast(getErrorMessage(err), 'error');
+      setDeleteError(getErrorMessage(err));
     } finally {
       setIsDeleting(false);
     }
   };
 
+  const filterSubjectsList = filterDeptId
+    ? subjects.filter((s) => s.departmentId === filterDeptId)
+    : subjects;
+  const editSubjectsList = editDeptId
+    ? subjects.filter((s) => s.departmentId === editDeptId)
+    : subjects;
+  const hasFilters = Boolean(searchQuery || filterDeptId || filterSubjectId || filterType);
+
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '28px' }}>
-        <span className="eyebrow light">
-          <span className="eyebrow-dot" /> Catalog Administration
-        </span>
-        <h1 style={{ color: '#ffffff', marginBottom: '6px' }}>Manage Approved Documents</h1>
-        <p style={{ color: '#e2e8f0', fontSize: '14px' }}>
-          Inspect repository documents, adjust metadata, and permanently remove deprecated records.
-          Note: per academic security policy, document PDFs cannot be replaced in place.
-        </p>
+    <div>
+      <div className="page-header">
+        <div>
+          <span className="eyebrow">
+            <span className="eyebrow-dot" /> Catalog Administration
+          </span>
+          <h1>Manage Approved Documents</h1>
+          <p className="page-header-subtitle">
+            Edit catalog metadata, adjust course assignments, or permanently remove deprecated
+            records. PDF binaries remain immutable per institutional integrity rules.
+          </p>
+        </div>
       </div>
 
-      {error && <div><ErrorAlert message={error} /><button className="btn btn-secondary" onClick={() => setRefresh(value => value + 1)}>Retry</button></div>}
+      {error && (
+        <div style={{ marginBottom: '16px' }}>
+          <ErrorAlert message={error} />
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setRefresh((v) => v + 1)}>
+            Retry
+          </button>
+        </div>
+      )}
 
-      {/* Search Bar */}
-      <div style={{ marginBottom: '20px', maxWidth: '420px' }}>
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <Search size={16} color="var(--c-slate)" style={{ position: 'absolute', left: '14px' }} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-            placeholder="Filter by title?"
-            aria-label="Filter approved documents by title"
-            maxLength={250}
-            className="form-input"
-            style={{ paddingLeft: '40px', height: '42px', borderRadius: '9999px' }}
-          />
+      {/* Search & Filter Toolbar */}
+      <div className="toolbar-panel">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))',
+            gap: '12px',
+            alignItems: 'end',
+          }}
+        >
+          <div>
+            <label
+              htmlFor="admin-doc-search"
+              style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '5px', color: 'var(--c-text-secondary)' }}
+            >
+              Title Search
+            </label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Search size={15} color="var(--c-text-muted)" style={{ position: 'absolute', left: '11px' }} />
+              <input
+                id="admin-doc-search"
+                type="search"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search approved documents..."
+                aria-label="Filter approved documents by title"
+                maxLength={250}
+                className="form-input"
+                style={{ paddingLeft: '34px', height: '38px', fontSize: '13px' }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="admin-doc-dept"
+              style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '5px', color: 'var(--c-text-secondary)' }}
+            >
+              Department
+            </label>
+            <select
+              id="admin-doc-dept"
+              value={filterDeptId}
+              onChange={(e) => {
+                setFilterDeptId(e.target.value);
+                setFilterSubjectId('');
+                setPage(1);
+              }}
+              className="form-select"
+              style={{ height: '38px', fontSize: '13px' }}
+            >
+              <option value="">All Departments</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="admin-doc-subj"
+              style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '5px', color: 'var(--c-text-secondary)' }}
+            >
+              Subject / Course
+            </label>
+            <select
+              id="admin-doc-subj"
+              value={filterSubjectId}
+              onChange={(e) => {
+                setFilterSubjectId(e.target.value);
+                setPage(1);
+              }}
+              className="form-select"
+              style={{ height: '38px', fontSize: '13px' }}
+            >
+              <option value="">All Subjects</option>
+              {filterSubjectsList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="admin-doc-type"
+              style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '5px', color: 'var(--c-text-secondary)' }}
+            >
+              Classification
+            </label>
+            <select
+              id="admin-doc-type"
+              value={filterType}
+              onChange={(e) => {
+                setFilterType(e.target.value);
+                setPage(1);
+              }}
+              className="form-select"
+              style={{ height: '38px', fontSize: '13px' }}
+            >
+              {DOCUMENT_TYPES_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {hasFilters && (
+            <div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ height: '38px', width: '100%' }}
+                onClick={() => {
+                  setSearchQuery('');
+                  setFilterDeptId('');
+                  setFilterSubjectId('');
+                  setFilterType('');
+                  setPage(1);
+                }}
+              >
+                <RotateCcw size={13} /> Clear
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {error ? null : isLoading ? (
-        <div style={{ padding: '60px 0', textAlign: 'center' }}>
-          <Spinner size={36} label="Loading documents..." />
+        <div className="panel" style={{ padding: '48px 0', textAlign: 'center' }}>
+          <Spinner size={28} label="Loading approved documents..." />
         </div>
       ) : documents.length === 0 ? (
-        <div className="glass-card">
+        <div className="panel">
           <EmptyState
-            icon={<FileSpreadsheet size={32} />}
+            icon={<FileSpreadsheet size={28} />}
             title="No Documents Found"
-            description="No documents match your filter."
+            description="No approved catalog documents match your current search criteria."
+            action={
+              hasFilters ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterDeptId('');
+                    setFilterSubjectId('');
+                    setFilterType('');
+                    setPage(1);
+                  }}
+                >
+                  Reset filters
+                </button>
+              ) : undefined
+            }
           />
         </div>
       ) : (
@@ -182,7 +379,7 @@ export const DocumentManagementPage: React.FC = () => {
               <tr>
                 <th>Document Title</th>
                 <th>Classification</th>
-                <th>Course</th>
+                <th>Department &amp; Course</th>
                 <th>Author</th>
                 <th>Uploaded</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
@@ -191,6 +388,7 @@ export const DocumentManagementPage: React.FC = () => {
             <tbody>
               {documents.map((doc) => {
                 const sub = subjects.find((s) => s.id === doc.subjectId);
+                const dept = sub ? departments.find((d) => d.id === sub.departmentId) : undefined;
                 const dateStr = new Date(doc.uploadedAt).toLocaleDateString();
 
                 return (
@@ -199,24 +397,45 @@ export const DocumentManagementPage: React.FC = () => {
                     <td>
                       <TypeBadge type={doc.type} />
                     </td>
-                    <td>{sub ? sub.name : 'Unknown Course'}</td>
+                    <td>
+                      <div style={{ fontWeight: 600, fontSize: '12.5px' }}>
+                        {sub ? sub.name : 'Unknown Course'}
+                      </div>
+                      {dept && (
+                        <div style={{ fontSize: '11.5px', color: 'var(--c-text-muted)' }}>{dept.name}</div>
+                      )}
+                    </td>
                     <td>{doc.author || '—'}</td>
-                    <td>{dateStr}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px' }}>
+                    <td style={{ fontVariantNumeric: 'tabular-nums' }}>{dateStr}</td>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', gap: '4px' }}>
+                        <Link
+                          to={`/library/${doc.id}`}
+                          className="btn-ghost"
+                          style={{ padding: '6px', borderRadius: '4px', color: 'var(--c-accent)' }}
+                          title="Open PDF viewer"
+                          aria-label={`View ${doc.title}`}
+                        >
+                          <ExternalLink size={15} />
+                        </Link>
                         <button
+                          type="button"
                           onClick={() => openEditModal(doc)}
                           className="btn-ghost"
-                          style={{ padding: '6px', color: 'var(--c-slate)' }}
+                          style={{ padding: '6px', borderRadius: '4px', color: 'var(--c-text-secondary)' }}
                           title="Edit metadata"
                           aria-label={`Edit ${doc.title}`}
                         >
                           <Edit2 size={15} />
                         </button>
                         <button
-                          onClick={() => setDeletingDoc(doc)}
+                          type="button"
+                          onClick={() => {
+                            setDeleteError(null);
+                            setDeletingDoc(doc);
+                          }}
                           className="btn-ghost"
-                          style={{ padding: '6px', color: '#dc2626' }}
+                          style={{ padding: '6px', borderRadius: '4px', color: 'var(--c-danger)' }}
                           title="Delete document"
                           aria-label={`Delete ${doc.title}`}
                         >
@@ -239,23 +458,40 @@ export const DocumentManagementPage: React.FC = () => {
         isOpen={!!editingDoc}
         onClose={() => setEditingDoc(null)}
         title="Edit Document Metadata"
-        description="Update title, author, classification or course assignment. PDF content is locked."
+        description="Update title, author, classification, or subject assignment."
       >
-        <form onSubmit={handleSaveEdit}>
+        <form onSubmit={handleSaveEdit} noValidate>
+          {editError && <ErrorAlert message={editError} />}
+
+          <div className="alert alert-info" style={{ marginBottom: '16px', padding: '10px 12px', fontSize: '12px' }}>
+            <Lock size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span>PDF binary content cannot be replaced in place per SRS FR-06.</span>
+          </div>
+
           <Input
             id="edit-title"
             label="Title"
+            maxLength={500}
             value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
+            onChange={(e) => {
+              setEditTitle(e.target.value);
+              if (editTitleError) setEditTitleError(undefined);
+            }}
             required
+            error={editTitleError}
           />
 
           <Input
             id="edit-author"
             label="Author(s)"
+            maxLength={250}
             value={editAuthor}
-            onChange={(e) => setEditAuthor(e.target.value)}
+            onChange={(e) => {
+              setEditAuthor(e.target.value);
+              if (editAuthorError) setEditAuthorError(undefined);
+            }}
             placeholder="Optional"
+            error={editAuthorError}
           />
 
           <Select
@@ -267,26 +503,58 @@ export const DocumentManagementPage: React.FC = () => {
             required
           />
 
-          <div className="form-group">
-            <label htmlFor="edit-subject" className="form-label">
-              Course / Subject <span style={{ color: '#ef4444' }}>*</span>
-            </label>
-            <select
-              id="edit-subject"
-              value={editSubjectId}
-              onChange={(e) => setEditSubjectId(e.target.value)}
-              className="form-select"
-              required
-            >
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
+              gap: '12px',
+            }}
+          >
+            <div className="form-group">
+              <label htmlFor="edit-department" className="form-label">
+                Department
+              </label>
+              <select
+                id="edit-department"
+                value={editDeptId}
+                onChange={(e) => {
+                  const deptId = e.target.value;
+                  setEditDeptId(deptId);
+                  setEditSubjectId(subjects.find((s) => s.departmentId === deptId)?.id ?? '');
+                }}
+                className="form-select"
+              >
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-subject" className="form-label">
+                <span>
+                  Course / Subject <span style={{ color: 'var(--c-danger)' }}>*</span>
+                </span>
+              </label>
+              <select
+                id="edit-subject"
+                value={editSubjectId}
+                onChange={(e) => setEditSubjectId(e.target.value)}
+                className="form-select"
+                required
+              >
+                {editSubjectsList.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div className="modal-footer">
+          <div className="modal-footer" style={{ margin: '18px -22px -16px' }}>
             <Button
               type="button"
               variant="secondary"
@@ -305,12 +573,16 @@ export const DocumentManagementPage: React.FC = () => {
       {/* Confirm Permanent Delete Dialog */}
       <ConfirmDialog
         isOpen={!!deletingDoc}
-        onClose={() => setDeletingDoc(null)}
+        onClose={() => {
+          setDeletingDoc(null);
+          setDeleteError(null);
+        }}
         onConfirm={handleConfirmDelete}
         title="Permanently Delete Document"
-        message={`Are you sure you want to permanently delete "${deletingDoc?.title}"? This action removes the document record and cleans up storage binaries.`}
+        message={`Are you sure you want to permanently delete "${deletingDoc?.title}"? This removes the document record and cleans up stored GridFS binaries.`}
         confirmLabel="Permanently Delete"
         isLoading={isDeleting}
+        error={deleteError}
       />
     </div>
   );

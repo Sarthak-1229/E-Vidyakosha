@@ -8,11 +8,11 @@ interface BrandProps {
 }
 
 export const Brand: React.FC<BrandProps> = ({ to = '/', size = 'md' }) => {
-  const iconSize = size === 'sm' ? 18 : size === 'lg' ? 26 : 22;
+  const iconSize = size === 'sm' ? 16 : size === 'lg' ? 22 : 18;
 
   return (
     <Link className="brand" to={to} aria-label="E-Vidyakosha home">
-      <span className="brand-mark">
+      <span className={`brand-mark ${size === 'lg' ? 'lg' : ''}`}>
         <BookOpenText size={iconSize} strokeWidth={2.2} />
       </span>
       <span>E-Vidyakosha</span>
