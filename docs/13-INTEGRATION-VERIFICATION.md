@@ -13,7 +13,7 @@ The built React client uses the published API at `/api/v1`. Its co-located produ
 | Security and mobile | Role violations, stale or expired JWTs, browser memory-only storage, keyboard focus, mobile navigation and horizontal overflow are checked |
 | Contract | The integration test records successful calls and compares them to all 25 OpenAPI operation IDs. The unit suite validates the OpenAPI 3.1 document |
 
-The [browser suite](../apps/api/tests/e2e/integrated.spec.ts) serves the build over HTTP from Express, uses Chromium, and starts a real MongoDB replica set. It checks the browser for uncaught exceptions and unexpected console errors. Mobile coverage uses a 390 × 844 emulated viewport with reduced motion. The [backend suite](../apps/api/tests/api.integration.ts) verifies negative paths, permissions, exact 50 MiB, concurrency and GridFS compensation separately from UI tests.
+The [browser suite](../apps/api/tests/e2e/integrated.spec.ts) serves the build over HTTP from Express, uses Chromium, and starts a real MongoDB replica set. It checks the browser for uncaught exceptions and unexpected console errors. Mobile coverage uses Playwright's iPhone 13 profile with reduced motion (390 × 664 CSS viewport in the locked Playwright version). The [backend suite](../apps/api/tests/api.integration.ts) verifies negative paths, permissions, exact 50 MiB, concurrency and GridFS compensation separately from UI tests.
 
 ## Adopted decisions
 

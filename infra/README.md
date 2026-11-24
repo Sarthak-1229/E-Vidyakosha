@@ -5,7 +5,7 @@ MongoDB metadata transactions require a replica set, while GridFS is not permitt
 ```bash
 cd infra
 docker compose up -d
-docker compose exec mongodb mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+docker compose exec mongodb mongosh --quiet --eval "rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]})"
 # After initialization:
 docker compose exec mongodb mongosh --quiet --eval 'rs.status().ok'
 ```
@@ -13,6 +13,22 @@ docker compose exec mongodb mongosh --quiet --eval 'rs.status().ok'
 Expected app `MONGODB_URI`: `mongodb://127.0.0.1:27017/evidyakosha?replicaSet=rs0&directConnection=true`.
 
 This demo container has **no MongoDB authentication** and binds to localhost only. Do not expose it externally or use as a production configuration; configure managed database credentials, backups, TLS, restricted network access and persistent storage before deployment.
+
+With native MongoDB Community, create a local data directory and launch the server in a separate terminal. Keep using the same directory across restarts. For example, from the repository root in PowerShell:
+
+```powershell
+$dbDir = [IO.Directory]::CreateDirectory((Join-Path (Get-Location) '.tmp/mongo-local')).FullName
+mongod --dbpath "$dbDir" --replSet rs0 --bind_ip 127.0.0.1 --port 27017
+```
+
+For a **new** native data directory, initialize it once with the command below. For an existing set, use only the second command to check for a writable primary. The Docker instructions above run the shell inside the container.
+
+```bash
+mongosh --host localhost:27017 --quiet --eval "rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]})"
+mongosh --host localhost:27017 --quiet --eval 'db.hello().isWritablePrimary'
+```
+
+The [classroom setup](../docs/demo/README.md) uses the separate database `evidyakosha_demo_v1` on this local replica set. Hosted installations have a separate [deployment guide](DEPLOYMENT.md).
 
 ## API startup and initial administrator
 
