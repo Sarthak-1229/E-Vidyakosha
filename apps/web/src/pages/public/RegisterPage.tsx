@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Input } from '../../components/common/Input';
@@ -11,10 +11,11 @@ import {
   validateNameInput,
   validatePasswordInput,
 } from '../../lib/validation';
+import { getRoleHomePath } from '../../lib/navigation';
 import { ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
-  const { register } = useAuth();
+  const { user, isAuthenticated, isLoading: checkingAuth, register } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -31,6 +32,10 @@ export const RegisterPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [successUser, setSuccessUser] = useState<string | null>(null);
+
+  if (!checkingAuth && isAuthenticated && user) {
+    return <Navigate to={getRoleHomePath(user.role)} replace />;
+  }
 
   const validate = (): boolean => {
     setServerError(null);

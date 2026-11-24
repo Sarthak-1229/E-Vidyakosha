@@ -161,8 +161,11 @@ export const FacultyUploadPage: React.FC = () => {
         ...(author.trim() ? { author: author.trim() } : {}),
       };
 
-      await submitPdf(params);
-      showToast('Document uploaded successfully and queued for review!', 'success');
+      const result = await submitPdf(params);
+      showToast(
+        `Submitted as ${result.status} (ID: ${result.submissionId}). Queued for admin review.`,
+        'success',
+      );
       navigate('/faculty/submissions');
     } catch (err: unknown) {
       setServerError(getErrorMessage(err));
@@ -454,6 +457,16 @@ export const FacultyUploadPage: React.FC = () => {
             </div>
           )}
 
+          {!loadingHierarchy && !hierarchyError && subjects.length === 0 && (
+            <div className="alert alert-error" style={{ marginBottom: '16px' }}>
+              <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <span>
+                No academic subjects exist yet. Ask an Administrator to create at least one Course /
+                Subject before uploading documents.
+              </span>
+            </div>
+          )}
+
           {hierarchyError && (
             <div style={{ marginBottom: '16px' }}>
               <ErrorAlert message={hierarchyError} />
@@ -490,6 +503,7 @@ export const FacultyUploadPage: React.FC = () => {
               type="submit"
               variant="primary"
               isLoading={isSubmitting}
+              disabled={!loadingHierarchy && subjects.length === 0}
               rightIcon={<ArrowRight size={15} />}
             >
               Submit for Review

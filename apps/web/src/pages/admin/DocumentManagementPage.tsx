@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  searchApprovedDocuments,
+  searchDocumentsInScope,
   updateDocumentMetadata,
   deleteDocument,
   listDepartments,
@@ -59,6 +59,7 @@ export const DocumentManagementPage: React.FC = () => {
   const [refresh, setRefresh] = useState(0);
   const pageSize = 20;
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoadingHierarchy, setIsLoadingHierarchy] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // Edit metadata modal state
@@ -80,37 +81,71 @@ export const DocumentManagementPage: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-    setIsLoading(true);
-    setError(null);
-    async function load() {
-      try {
-        const [response, depts, courses] = await Promise.all([
-          searchApprovedDocuments({
-            q: searchQuery,
-            subjectId: filterSubjectId || undefined,
-            type: filterType ? (filterType as DocumentType) : undefined,
-            page,
-            pageSize,
-          }),
-          listDepartments(),
-          listSubjects(),
-        ]);
+    setIsLoadingHierarchy(true);
+    Promise.all([listDepartments(), listSubjects()])
+      .then(([depts, courses]) => {
         if (!active) return;
-        setDocuments(response.items);
         setDepartments(depts);
         setSubjects(courses);
-        setTotal(response.total);
-      } catch (cause) {
-        if (active) setError(getErrorMessage(cause));
-      } finally {
-        if (active) setIsLoading(false);
-      }
-    }
-    void load();
+      })
+      .catch(() => {
+        // Hierarchy load failures still allow catalog operations; list load reports primary error.
+      })
+      .finally(() => {
+        if (active) setIsLoadingHierarchy(false);
+      });
     return () => {
       active = false;
     };
-  }, [page, refresh, searchQuery, filterSubjectId, filterType]);
+  }, []);
+
+  const departmentScopeKey =
+    filterDeptId && !filterSubjectId
+      ? isLoadingHierarchy
+        ? 'LOADING'
+        : subjects
+            .filter((s) => s.departmentId === filterDeptId)
+            .map((s) => s.id)
+            .join(',')
+      : '';
+
+  useEffect(() => {
+    if (departmentScopeKey === 'LOADING') {
+      setIsLoading(true);
+      return;
+    }
+    const controller = new AbortController();
+    setIsLoading(true);
+    setError(null);
+    searchDocumentsInScope(
+      {
+        q: searchQuery,
+        subjectId: filterSubjectId || undefined,
+        type: filterType ? (filterType as DocumentType) : undefined,
+        page,
+        pageSize,
+      },
+      filterDeptId || undefined,
+      subjects,
+      controller.signal,
+    )
+      .then(
+        (response) => {
+          if (controller.signal.aborted) return;
+          setDocuments(response.items);
+          setTotal(response.total);
+        },
+        (cause) => {
+          if (!controller.signal.aborted) setError(getErrorMessage(cause));
+        },
+      )
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
+  }, [page, refresh, searchQuery, filterDeptId, filterSubjectId, filterType, departmentScopeKey]);
 
   const openEditModal = (doc: DocumentDto) => {
     const subj = subjects.find((s) => s.id === doc.subjectId);
@@ -288,7 +323,7 @@ export const DocumentManagementPage: React.FC = () => {
               className="form-select"
               style={{ height: '38px', fontSize: '13px' }}
             >
-              <option value="">All Subjects</option>
+              <option value="">{filterDeptId ? 'All in Department' : 'All Subjects'}</option>
               {filterSubjectsList.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}

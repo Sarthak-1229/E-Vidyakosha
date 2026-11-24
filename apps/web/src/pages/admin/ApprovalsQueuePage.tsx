@@ -213,6 +213,9 @@ export const ApprovalsQueuePage: React.FC = () => {
                         <User size={13} /> Author: <strong>{sub.document.author}</strong>
                       </span>
                     )}
+                    <span title={`Submission ID: ${sub.id}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      ID: #{sub.id.slice(-8)}
+                    </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontVariantNumeric: 'tabular-nums' }}>
                       <Calendar size={13} /> Submitted: {submittedDate}
                     </span>

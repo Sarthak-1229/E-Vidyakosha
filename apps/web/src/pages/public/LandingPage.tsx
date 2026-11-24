@@ -10,9 +10,11 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getRoleHomePath } from '../../lib/navigation';
 
 export const LandingPage: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const workspacePath = getRoleHomePath(user?.role);
 
   return (
     <>
@@ -31,12 +33,25 @@ export const LandingPage: React.FC = () => {
           </p>
 
           <div className="hero-actions">
-            <Link to={isAuthenticated ? '/library' : '/library'} className="btn btn-primary btn-lg">
-              Explore Library <ArrowRight size={16} />
-            </Link>
-            <Link to="/register" className="btn btn-secondary btn-lg">
-              Student Sign Up
-            </Link>
+            {isAuthenticated && user ? (
+              <>
+                <Link to={workspacePath} className="btn btn-primary btn-lg">
+                  Open Workspace <ArrowRight size={16} />
+                </Link>
+                <Link to="/library" className="btn btn-secondary btn-lg">
+                  Explore Library
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/library" className="btn btn-primary btn-lg">
+                  Explore Library <ArrowRight size={16} />
+                </Link>
+                <Link to="/register" className="btn btn-secondary btn-lg">
+                  Student Sign Up
+                </Link>
+              </>
+            )}
           </div>
 
           <div className="hero-meta-note">

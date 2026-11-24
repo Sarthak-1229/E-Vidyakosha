@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  searchApprovedDocuments,
+  searchDocumentsInScope,
   listDepartments,
   listSubjects,
   downloadDocument,
@@ -92,11 +92,25 @@ export const LibraryPage: React.FC = () => {
     };
   }, []);
 
+  const departmentScopeKey =
+    selectedDepartmentId && !selectedSubjectId
+      ? isLoadingHierarchy
+        ? 'LOADING'
+        : subjects
+            .filter((s) => s.departmentId === selectedDepartmentId)
+            .map((s) => s.id)
+            .join(',')
+      : '';
+
   useEffect(() => {
+    if (departmentScopeKey === 'LOADING') {
+      setIsLoading(true);
+      return;
+    }
     const controller = new AbortController();
     setIsLoading(true);
     setError(null);
-    searchApprovedDocuments(
+    searchDocumentsInScope(
       {
         q: query,
         subjectId: selectedSubjectId,
@@ -104,6 +118,8 @@ export const LibraryPage: React.FC = () => {
         page: currentPage,
         pageSize,
       },
+      selectedDepartmentId || undefined,
+      subjects,
       controller.signal,
     )
       .then(
@@ -120,7 +136,7 @@ export const LibraryPage: React.FC = () => {
         if (!controller.signal.aborted) setIsLoading(false);
       });
     return () => controller.abort();
-  }, [query, selectedSubjectId, selectedType, currentPage, refresh]);
+  }, [query, selectedDepartmentId, selectedSubjectId, selectedType, currentPage, refresh, departmentScopeKey]);
 
   const handleDepartmentChange = (deptId: string) => {
     updateParams({ dept: deptId || null, subject: null, page: null });
@@ -308,6 +324,14 @@ export const LibraryPage: React.FC = () => {
               <span className="filter-chip">
                 Query: “{query}”
                 <button type="button" aria-label="Remove query filter" onClick={() => handleSearchChange('')}>
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {activeDepartment && !activeSubject && (
+              <span className="filter-chip">
+                Department: {activeDepartment.name}
+                <button type="button" aria-label="Remove department filter" onClick={() => handleDepartmentChange('')}>
                   <X size={12} />
                 </button>
               </span>

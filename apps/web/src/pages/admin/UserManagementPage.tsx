@@ -33,7 +33,7 @@ export const UserManagementPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [refresh, setRefresh] = useState(0);
-  const pageSize = 20;
+  const pageSize = 50;
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -203,18 +203,22 @@ export const UserManagementPage: React.FC = () => {
         }}
       >
         <div className="segmented-control" role="tablist" aria-label="Filter users by role">
-          {(['ALL', 'STUDENT', 'FACULTY', 'ADMIN'] as const).map((r) => (
-            <button
-              key={r}
-              type="button"
-              role="tab"
-              aria-selected={roleFilter === r}
-              onClick={() => setRoleFilter(r)}
-              className={`segmented-btn ${roleFilter === r ? 'active' : ''}`}
-            >
-              {r === 'ALL' ? `All (${total})` : r}
-            </button>
-          ))}
+          {(['ALL', 'STUDENT', 'FACULTY', 'ADMIN'] as const).map((r) => {
+            const showCount = total <= users.length;
+            const roleCount = r === 'ALL' ? total : users.filter((u) => u.role === r).length;
+            return (
+              <button
+                key={r}
+                type="button"
+                role="tab"
+                aria-selected={roleFilter === r}
+                onClick={() => setRoleFilter(r)}
+                className={`segmented-btn ${roleFilter === r ? 'active' : ''}`}
+              >
+                {r === 'ALL' ? `All (${total})` : showCount ? `${r} (${roleCount})` : r}
+              </button>
+            );
+          })}
         </div>
 
         <input

@@ -316,6 +316,7 @@ export const FacultySubmissionsPage: React.FC = () => {
                           Author: <strong>{sub.document.author}</strong>
                         </span>
                       )}
+                      <span title={`Submission ID: ${sub.id}`}>ID: #{sub.id.slice(-8)}</span>
                       <span>Submitted: {submittedDate}</span>
                       {reviewedDate && <span>Reviewed: {reviewedDate}</span>}
                     </div>

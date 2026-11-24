@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Input } from '../../components/common/Input';
@@ -7,10 +7,11 @@ import { Button } from '../../components/common/Button';
 import { ErrorAlert } from '../../components/common/ErrorAlert';
 import { getErrorMessage } from '../../api';
 import { validateEmailInput, validatePasswordInput } from '../../lib/validation';
+import { getRoleHomePath } from '../../lib/navigation';
 import { ArrowRight } from 'lucide-react';
 
 export const SignInPage: React.FC = () => {
-  const { login, sessionExpired } = useAuth();
+  const { user, isAuthenticated, isLoading: checkingAuth, login, sessionExpired } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,6 +22,11 @@ export const SignInPage: React.FC = () => {
   const [passwordError, setPasswordError] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+  if (!checkingAuth && isAuthenticated && user) {
+    return <Navigate to={from || getRoleHomePath(user.role)} replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,19 +42,9 @@ export const SignInPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const user = await login({ email: email.trim().toLowerCase(), password });
-      showToast(`Welcome back, ${user.name}!`, 'success');
-
-      const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-      if (from) {
-        navigate(from, { replace: true });
-      } else if (user.role === 'ADMIN') {
-        navigate('/admin/approvals', { replace: true });
-      } else if (user.role === 'FACULTY') {
-        navigate('/faculty/submissions', { replace: true });
-      } else {
-        navigate('/library', { replace: true });
-      }
+      const signedInUser = await login({ email: email.trim().toLowerCase(), password });
+      showToast(`Welcome back, ${signedInUser.name}!`, 'success');
+      navigate(from || getRoleHomePath(signedInUser.role), { replace: true });
     } catch (err: unknown) {
       // FR-02: invalid email and password share generic error
       setErrorMessage(getErrorMessage(err));
