@@ -20,7 +20,17 @@ Set `MONGODB_URI`, `JWT_SECRET` and `WEB_ORIGIN` in the API environment. The API
 
 Provide `BOOTSTRAP_ADMIN_NAME`, `BOOTSTRAP_ADMIN_EMAIL` and a unique 16–128 character `BOOTSTRAP_ADMIN_PASSWORD` through a one-off environment or your secret manager. Run `npm run admin:bootstrap -w @evidy/api` from the repository root. The command checks for an existing Admin and handles simultaneous bootstrap attempts with a unique MongoDB index. Clear the bootstrap environment after use. Later privileged accounts are created through the authenticated Admin API.
 
-Run `npm run dev -w @evidy/api` for development or `npm run build && npm start -w @evidy/api` for the built server. Supply a valid replica-set URI to use an existing database.
+Run `npm run dev` from the repository root for both development processes. Run `npm run build` and then `npm start` to serve the built React app and Express API together. Supply a valid replica-set URI to use an existing database.
+
+For the production image, provision the initial Admin through the deployment environment and run:
+
+```bash
+docker compose -f infra/compose.production.yml run --rm \
+  -e BOOTSTRAP_ADMIN_NAME -e BOOTSTRAP_ADMIN_EMAIL -e BOOTSTRAP_ADMIN_PASSWORD \
+  app node dist/commands/bootstrap-admin.js
+```
+
+Clear the one-off bootstrap environment after the command. The image uses the app's runtime MongoDB connection and exits after provisioning.
 
 ## GridFS reconciliation
 
@@ -34,3 +44,5 @@ npm run files:reconcile -w @evidy/api -- --apply
 ```
 
 The command preserves binaries referenced by documents, and removes unreferenced assets, orphan files and orphan chunk groups. Each deletion can be retried. Restart the API after applying cleanup.
+
+In the production image use `node dist/commands/reconcile-files.js` as a one-off Compose command, with optional `--apply` after reviewing the inventory and stopping writers.

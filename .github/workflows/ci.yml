@@ -27,11 +27,19 @@ jobs:
         run: npm run test
       - name: MongoDB replica-set integration tests
         run: npm run test:integration -w @evidy/api
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Browser API tests
-        run: npm run test:e2e -w @evidy/api
       - name: Build
+        env:
+          VITE_USE_MOCKS: "true"
         run: npm run build
-      - name: Audit production dependencies
-        run: npm audit --omit=dev
+      - name: Install Chromium
+        timeout-minutes: 7
+        run: npx playwright install --with-deps chromium
+      - name: Integrated browser and API journeys
+        run: npm run test:e2e -w @evidy/api
+      - name: Audit dependencies
+        run: npm audit
+      - name: Build production container
+        run: docker build -t evidyakosha:ci .
+      - name: Smoke-test production container
+        timeout-minutes: 3
+        run: node scripts/smoke-image.mjs evidyakosha:ci
