@@ -1,6 +1,6 @@
 {
   "name": "@evidy/api",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,7 +15,7 @@
     "test:e2e": "playwright test --config playwright.config.ts"
   },
   "dependencies": {
-    "@evidy/shared": "0.1.0",
+    "@evidy/shared": "1.0.0",
     "content-disposition": "^2.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
