@@ -13,9 +13,6 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorAlert } from '../../components/common/ErrorAlert';
 import {
   Upload,
-  Clock,
-  CheckCircle2,
-  XCircle,
   FileText,
   MessageSquareWarning,
   RefreshCw,
@@ -74,13 +71,10 @@ export const FacultySubmissionsPage: React.FC = () => {
     <div>
       <div className="page-header">
         <div>
-          <span className="eyebrow">
-            <span className="eyebrow-dot" /> Faculty Contributions
-          </span>
+          <span className="eyebrow">Faculty Contributions</span>
           <h1>My Submissions</h1>
           <p className="page-header-subtitle">
-            Track administrative review decisions and feedback for your uploaded academic
-            resources.
+            Review administrative approval outcomes and revision notes for your uploaded PDFs.
           </p>
         </div>
 
@@ -96,46 +90,6 @@ export const FacultySubmissionsPage: React.FC = () => {
           <Link to="/faculty/upload" className="btn btn-primary btn-sm">
             <Upload size={14} /> Upload New Material
           </Link>
-        </div>
-      </div>
-
-      {/* Metrics Strip */}
-      <div className="metrics-strip">
-        <div className="metric-tile">
-          <div>
-            <div className="metric-label">Total Submitted</div>
-            <div className="metric-value">{submissions.length}</div>
-          </div>
-          <div className="metric-icon">
-            <FileText size={18} />
-          </div>
-        </div>
-        <div className="metric-tile">
-          <div>
-            <div className="metric-label">Under Review</div>
-            <div className="metric-value">{pendingCount}</div>
-          </div>
-          <div className="metric-icon" style={{ color: 'var(--c-warning-icon)' }}>
-            <Clock size={18} />
-          </div>
-        </div>
-        <div className="metric-tile">
-          <div>
-            <div className="metric-label">Approved</div>
-            <div className="metric-value">{approvedCount}</div>
-          </div>
-          <div className="metric-icon" style={{ color: 'var(--c-success-icon)' }}>
-            <CheckCircle2 size={18} />
-          </div>
-        </div>
-        <div className="metric-tile">
-          <div>
-            <div className="metric-label">Rejected</div>
-            <div className="metric-value">{rejectedCount}</div>
-          </div>
-          <div className="metric-icon" style={{ color: 'var(--c-danger-icon)' }}>
-            <XCircle size={18} />
-          </div>
         </div>
       </div>
 
@@ -265,8 +219,8 @@ export const FacultySubmissionsPage: React.FC = () => {
             return (
               <div
                 key={sub.id}
-                className="panel"
-                style={{ padding: '18px 22px' }}
+                className="docket-card"
+                style={{ padding: '18px 20px' }}
                 data-testid={`submission-card-${sub.id}`}
               >
                 <div

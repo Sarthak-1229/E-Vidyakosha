@@ -40,13 +40,13 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const getIcon = (type: ToastType) => {
     switch (type) {
       case 'success':
-        return <CheckCircle2 size={17} color="#16a34a" style={{ flexShrink: 0 }} />;
+        return <CheckCircle2 size={17} color="var(--c-success-icon)" style={{ flexShrink: 0 }} />;
       case 'error':
-        return <XCircle size={17} color="#dc2626" style={{ flexShrink: 0 }} />;
+        return <XCircle size={17} color="var(--c-danger-icon)" style={{ flexShrink: 0 }} />;
       case 'warning':
-        return <AlertCircle size={17} color="#d97706" style={{ flexShrink: 0 }} />;
+        return <AlertCircle size={17} color="var(--c-warning-icon)" style={{ flexShrink: 0 }} />;
       default:
-        return <Info size={17} color="#0095eb" style={{ flexShrink: 0 }} />;
+        return <Info size={17} color="var(--c-accent)" style={{ flexShrink: 0 }} />;
     }
   };
 

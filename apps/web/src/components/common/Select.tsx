@@ -1,4 +1,4 @@
-import { type SelectHTMLAttributes, forwardRef, type ReactNode } from 'react';
+import { type SelectHTMLAttributes, forwardRef, useId, type ReactNode } from 'react';
 import { AlertCircle } from 'lucide-react';
 
 export interface SelectOption {
@@ -16,14 +16,15 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, hint, id, className = '', options, children, required, ...props }, ref) => {
-    const selectId = id || props.name || Math.random().toString(36).substring(7);
+    const generatedId = useId();
+    const selectId = id || props.name || generatedId;
 
     return (
       <div className="form-group">
         {label && (
           <label htmlFor={selectId} className="form-label">
             <span>
-              {label} {required && <span style={{ color: '#ef4444' }}>*</span>}
+              {label} {required && <span style={{ color: 'var(--c-danger)' }}>*</span>}
             </span>
           </label>
         )}

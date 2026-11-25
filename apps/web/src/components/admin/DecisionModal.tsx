@@ -140,8 +140,8 @@ export const DecisionModal: React.FC<DecisionModalProps> = ({
               }}
               className={`btn ${decision === 'APPROVED' ? 'btn-primary' : 'btn-secondary'}`}
               style={{
-                background: decision === 'APPROVED' ? '#15803d' : undefined,
-                borderColor: decision === 'APPROVED' ? '#15803d' : undefined,
+                background: decision === 'APPROVED' ? '#1e5638' : undefined,
+                borderColor: decision === 'APPROVED' ? '#1e5638' : undefined,
               }}
             >
               <CheckCircle2 size={15} /> Approve Resource

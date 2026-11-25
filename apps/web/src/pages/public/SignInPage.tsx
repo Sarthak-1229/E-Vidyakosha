@@ -56,10 +56,10 @@ export const SignInPage: React.FC = () => {
   return (
     <section className="sign-section">
       <div className="signin-card">
-        <span className="eyebrow">Authenticated Access</span>
+        <span className="eyebrow">Institutional Sign In</span>
         <h1 style={{ marginBottom: '6px' }}>Welcome back.</h1>
         <p style={{ fontSize: '13.5px', marginBottom: '22px' }}>
-          Sign in to access your course materials and institutional workspaces.
+          Sign in with your MIT AOE repository credentials to open the catalog or workspace.
         </p>
 
         {(errorMessage || sessionExpired) && (

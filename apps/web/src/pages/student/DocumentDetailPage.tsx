@@ -113,8 +113,15 @@ export const DocumentDetailPage: React.FC = () => {
         )}
       </nav>
 
-      {/* Metadata Summary Panel */}
-      <div className="panel" style={{ marginBottom: '18px', padding: '20px 24px' }}>
+      {/* Metadata Citation Panel */}
+      <div
+        className="panel"
+        style={{
+          marginBottom: '18px',
+          padding: '20px 24px',
+          borderTop: '3px solid var(--c-accent)',
+        }}
+      >
         <div
           style={{
             display: 'flex',
@@ -128,7 +135,9 @@ export const DocumentDetailPage: React.FC = () => {
           <span className="badge badge-approved">Approved Resource</span>
         </div>
 
-        <h1 style={{ fontSize: '22px', marginBottom: '12px' }}>{document.title}</h1>
+        <h1 style={{ fontSize: 'clamp(20px, 2.2vw, 26px)', marginBottom: '12px' }}>
+          {document.title}
+        </h1>
 
         <div
           style={{

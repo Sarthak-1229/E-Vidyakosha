@@ -24,9 +24,7 @@ import { ErrorAlert } from '../../components/common/ErrorAlert';
 import { useToast } from '../../context/ToastContext';
 import {
   BookOpen,
-  Building2,
   Download,
-  FileCheck2,
   FolderSearch,
   LayoutGrid,
   List,
@@ -185,13 +183,11 @@ export const LibraryPage: React.FC = () => {
     <div>
       <div className="page-header">
         <div>
-          <span className="eyebrow">
-            <span className="eyebrow-dot" /> Approved Institutional Catalog
-          </span>
+          <span className="eyebrow">Approved Institutional Catalog</span>
           <h1>Academic Library</h1>
           <p className="page-header-subtitle">
-            Browse faculty-verified lecture notes, lab manuals, reference books, and examination
-            question banks organized by academic hierarchy.
+            Search verified lecture notes, laboratory manuals, reference books, and examination
+            question papers across campus departments.
           </p>
         </div>
 
@@ -227,40 +223,9 @@ export const LibraryPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary Strip */}
-      <div className="metrics-strip">
-        <div className="metric-tile">
-          <div>
-            <div className="metric-label">Matching Resources</div>
-            <div className="metric-value">{totalItems}</div>
-          </div>
-          <div className="metric-icon">
-            <FileCheck2 size={18} />
-          </div>
-        </div>
-        <div className="metric-tile">
-          <div>
-            <div className="metric-label">Departments</div>
-            <div className="metric-value">{isLoadingHierarchy ? '—' : departments.length}</div>
-          </div>
-          <div className="metric-icon">
-            <Building2 size={18} />
-          </div>
-        </div>
-        <div className="metric-tile">
-          <div>
-            <div className="metric-label">Courses / Subjects</div>
-            <div className="metric-value">{isLoadingHierarchy ? '—' : subjects.length}</div>
-          </div>
-          <div className="metric-icon">
-            <BookOpen size={18} />
-          </div>
-        </div>
-      </div>
-
       {hierarchyError && <ErrorAlert message={'Academic filters could not load. ' + hierarchyError} />}
 
-      {/* Search & Hierarchy Filter Toolbar */}
+      {/* Search-First Catalog Toolbar */}
       <div className="toolbar-panel">
         <SearchBar
           value={query}
@@ -313,9 +278,23 @@ export const LibraryPage: React.FC = () => {
 
       {/* Results Meta & Active Filter Chips */}
       <div className="results-bar">
-        <span role="status" style={{ fontSize: '13px', color: 'var(--c-text-secondary)', fontWeight: 600 }}>
+        <span
+          role="status"
+          style={{
+            fontSize: '13px',
+            color: 'var(--c-text-secondary)',
+            fontWeight: 500,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
           Showing <strong>{documents.length}</strong> of <strong>{totalItems}</strong> approved
           resource{totalItems === 1 ? '' : 's'}
+          {!isLoadingHierarchy && departments.length > 0 && (
+            <span style={{ color: 'var(--c-text-muted)' }}>
+              {' '}
+              · {departments.length} departments · {subjects.length} courses
+            </span>
+          )}
         </span>
 
         {(query || activeDepartment || activeSubject || activeTypeLabel) && (

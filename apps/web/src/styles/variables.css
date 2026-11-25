@@ -1,72 +1,73 @@
 :root {
-  /* Palette — Crisp Light Console Surface Hierarchy */
-  --c-canvas: #f4f7fa;
+  /* Palette — Academic Editorial (Warm Archival Vellum + Deep Ink + Slate Navy) */
+  --c-canvas: #f7f5f0;
   --c-surface: #ffffff;
-  --c-surface-subtle: #f8fafc;
-  --c-surface-hover: #f1f5f9;
-  --c-surface-active: #e8f5fe;
+  --c-surface-subtle: #f2efe8;
+  --c-surface-hover: #ebe6dc;
+  --c-surface-active: #edf2f7;
 
-  /* Ink & Typography Colors */
-  --c-ink: #0f172a;
-  --c-ink-strong: #1e293b;
-  --c-text-primary: #1e293b;
-  --c-text-secondary: #475569;
-  --c-text-muted: #64748b;
-  --c-text-subtle: #94a3b8;
+  /* Ink & Typographic Hierarchy */
+  --c-ink: #171b21;
+  --c-ink-strong: #232933;
+  --c-text-primary: #222730;
+  --c-text-secondary: #4e5663;
+  --c-text-muted: #666f7d;
+  --c-text-subtle: #8b93a0;
   --c-text-inverse: #ffffff;
 
-  /* Brand & Interactive Cerulean */
-  --c-accent: #0095eb;
-  --c-accent-hover: #0284c7;
-  --c-accent-pressed: #0369a1;
-  --c-accent-tint: #e8f5fe;
-  --c-accent-border: #bae6fd;
+  /* Restrained Slate-Blue Accents */
+  --c-accent: #2c4a6e;
+  --c-accent-hover: #213a57;
+  --c-accent-pressed: #182c44;
+  --c-accent-tint: #ebf0f6;
+  --c-accent-border: #c5d3e2;
 
-  /* Structural Hairlines & Shadows */
-  --c-border: #e2e8f0;
-  --c-border-strong: #cbd5e1;
-  --c-divider: #edf2f7;
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.02);
-  --shadow-elevated: 0 10px 28px -6px rgba(15, 23, 42, 0.14), 0 4px 10px -4px rgba(15, 23, 42, 0.06);
-  --shadow-popover: 0 8px 24px -4px rgba(15, 23, 42, 0.12), 0 0 0 1px #e2e8f0;
+  /* Structural Rules & Subtle Elevation */
+  --c-border: #e3ded3;
+  --c-border-strong: #cfc8ba;
+  --c-divider: #ece8df;
+  --shadow-card: 0 1px 2px rgba(23, 27, 33, 0.04);
+  --shadow-elevated: 0 10px 26px -10px rgba(23, 27, 33, 0.16), 0 2px 6px -2px rgba(23, 27, 33, 0.06);
+  --shadow-popover: 0 8px 22px -6px rgba(23, 27, 33, 0.14), 0 0 0 1px #e3ded3;
 
-  /* Semantic Status Colors */
-  --c-success-bg: #dcfce7;
-  --c-success-border: #bbf7d0;
-  --c-success-text: #166534;
-  --c-success-icon: #16a34a;
+  /* Muted Archival Semantic States */
+  --c-success-bg: #edf6f0;
+  --c-success-border: #bddac7;
+  --c-success-text: #1b4d33;
+  --c-success-icon: #246b47;
 
-  --c-warning-bg: #fef3c7;
-  --c-warning-border: #fde68a;
-  --c-warning-text: #92400e;
-  --c-warning-icon: #d97706;
+  --c-warning-bg: #faf3e3;
+  --c-warning-border: #e5cf9c;
+  --c-warning-text: #744e10;
+  --c-warning-icon: #9c6b16;
 
-  --c-danger-bg: #fee2e2;
-  --c-danger-border: #fecaca;
-  --c-danger-text: #991b1b;
-  --c-danger-icon: #dc2626;
-  --c-danger: #dc2626;
-  --c-danger-hover: #b91c1c;
+  --c-danger-bg: #faf0f0;
+  --c-danger-border: #e5bcbc;
+  --c-danger-text: #7e2222;
+  --c-danger-icon: #9b2c2c;
+  --c-danger: #9b2c2c;
+  --c-danger-hover: #7d2020;
 
-  --c-info-bg: #e0f2fe;
-  --c-info-border: #bae6fd;
-  --c-info-text: #075985;
+  --c-info-bg: #ebf0f6;
+  --c-info-border: #c5d3e2;
+  --c-info-text: #213a57;
 
-  /* Typography */
+  /* Editorial Serif + Clean Institutional Sans */
+  --font-editorial: 'Source Serif 4 Variable', 'Georgia', 'Times New Roman', serif;
   --font-headings: 'Manrope Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-body: 'DM Sans Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* Crisp Architectural Radii */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  /* Consistent, Restrained Radii */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 6px;
   --radius-pill: 9999px;
 
-  /* Layout Dimensions */
-  --topbar-height: 58px;
-  --sidebar-width: 264px;
+  /* Layout Geometry */
+  --topbar-height: 60px;
+  --sidebar-width: 268px;
 
   /* Accessibility Focus */
-  --focus-ring: 2px solid #0095eb;
+  --focus-ring: 2px solid #2c4a6e;
   --focus-offset: 2px;
 }

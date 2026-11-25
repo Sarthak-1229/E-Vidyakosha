@@ -1,14 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight,
-  BookOpen,
-  FileCheck2,
-  FileSearch,
-  FolderTree,
-  GraduationCap,
-  ShieldCheck,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getRoleHomePath } from '../../lib/navigation';
 
@@ -20,16 +12,14 @@ export const LandingPage: React.FC = () => {
     <>
       <section className="hero" aria-labelledby="hero-title">
         <div className="hero-copy">
-          <span className="eyebrow">
-            <span className="eyebrow-dot" /> MIT Academy of Engineering · Repository
-          </span>
+          <span className="eyebrow">MIT Academy of Engineering · Digital Repository</span>
           <h1 id="hero-title">
-            Academic Knowledge, <span>Structured &amp; Verified.</span>
+            Departmental Knowledge, Preserved for Study.
           </h1>
           <p>
-            A unified institutional catalog for lecture notes, laboratory manuals, question banks,
-            reference books, and research papers—organized by department and subject, and vetted by
-            faculty reviewers.
+            E-Vidyakosha is MIT Academy of Engineering&rsquo;s institutional archive for course
+            literature—bringing lecture notes, laboratory manuals, reference texts, and past
+            examination papers together by department and subject under faculty stewardship.
           </p>
 
           <div className="hero-actions">
@@ -48,145 +38,83 @@ export const LandingPage: React.FC = () => {
                   Explore Library <ArrowRight size={16} />
                 </Link>
                 <Link to="/register" className="btn btn-secondary btn-lg">
-                  Student Sign Up
+                  Student Registration
                 </Link>
               </>
             )}
           </div>
 
           <div className="hero-meta-note">
-            <ShieldCheck size={15} color="var(--c-success-icon)" />
-            <span>Authenticated access · SHA-256 duplicate protection · GridFS archival storage</span>
+            Institutional authentication required · Unencrypted PDF archival up to 50 MiB ·
+            SHA-256 duplicate protection
           </div>
         </div>
 
-        {/* Clean Architectural Console Preview Window */}
-        <div className="console-preview-window" aria-label="Academic catalog preview">
-          <div className="preview-window-bar">
-            <div className="preview-window-dots" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </div>
-            <span>E-Vidyakosha Console — Library Catalog</span>
-            <span style={{ color: 'var(--c-accent-pressed)' }}>MSS v2.0</span>
+        {/* Archival Catalog Index Plate */}
+        <aside className="ledger-plate" aria-label="Repository catalog specification">
+          <div className="ledger-plate-head">
+            <span className="ledger-plate-title">Repository Collection Standards</span>
+            <span className="ledger-plate-ref">MSS v2.0</span>
           </div>
 
-          <div className="preview-console-grid">
-            <div className="preview-sidebar">
-              <div
-                style={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: 'var(--c-text-subtle)',
-                  letterSpacing: '0.8px',
-                  textTransform: 'uppercase',
-                  padding: '2px 6px 6px',
-                }}
-              >
-                Hierarchy
-              </div>
-              <div className="preview-side-item active">
-                <BookOpen size={13} /> Academic Library
-              </div>
-              <div className="preview-side-item">
-                <span className="tree-dot" style={{ background: '#0095eb' }} /> Computer Engg.
-              </div>
-              <div className="preview-side-item">
-                <span className="tree-dot" style={{ background: '#10b981' }} /> E&amp;TC Engg.
-              </div>
-              <div className="preview-side-item">
-                <span className="tree-dot" style={{ background: '#8b5cf6' }} /> Mechanical Engg.
-              </div>
-              <div className="preview-side-item">
-                <span className="tree-dot" style={{ background: '#f59e0b' }} /> Civil Engg.
-              </div>
+          <div className="ledger-list">
+            <div className="ledger-row">
+              <span className="ledger-row-label">Academic Taxonomy</span>
+              <span className="ledger-row-val">Department → Subject → PDF</span>
             </div>
-
-            <div className="preview-main">
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderBottom: '1px solid var(--c-divider)',
-                  paddingBottom: '10px',
-                }}
-              >
-                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--c-ink)' }}>
-                  Approved Course Documents
-                </span>
-                <span className="badge badge-type">Department Verified</span>
-              </div>
-
-              <div className="preview-table-row">
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--c-ink)' }}>Data Structures &amp; Graphs</div>
-                  <div style={{ fontSize: '11px', color: 'var(--c-text-muted)' }}>Computer Engineering</div>
-                </div>
-                <span className="badge badge-type">Lecture Notes</span>
-                <span className="badge badge-approved">Approved</span>
-              </div>
-
-              <div className="preview-table-row">
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--c-ink)' }}>Database Normalization Manual</div>
-                  <div style={{ fontSize: '11px', color: 'var(--c-text-muted)' }}>DBMS Lab</div>
-                </div>
-                <span className="badge badge-type">Lab Manual</span>
-                <span className="badge badge-approved">Approved</span>
-              </div>
-
-              <div className="preview-table-row">
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--c-ink)' }}>Digital Signal Processing</div>
-                  <div style={{ fontSize: '11px', color: 'var(--c-text-muted)' }}>E&amp;TC Engineering</div>
-                </div>
-                <span className="badge badge-type">Question Paper</span>
-                <span className="badge badge-approved">Approved</span>
-              </div>
+            <div className="ledger-row">
+              <span className="ledger-row-label">Catalog Categories</span>
+              <span className="ledger-row-val">Notes, Manuals, Papers &amp; eBooks</span>
+            </div>
+            <div className="ledger-row">
+              <span className="ledger-row-label">Publication Review</span>
+              <span className="ledger-row-val">Faculty Upload → Admin Approval</span>
+            </div>
+            <div className="ledger-row">
+              <span className="ledger-row-label">Document Format</span>
+              <span className="ledger-row-val">Readable PDF (max 50 MiB)</span>
+            </div>
+            <div className="ledger-row">
+              <span className="ledger-row-label">Access Control</span>
+              <span className="ledger-row-val">Approved Holdings Only (GridFS)</span>
             </div>
           </div>
-        </div>
+        </aside>
       </section>
 
       <section className="section" id="features">
         <div className="section-head">
-          <span className="eyebrow">Institutional Architecture</span>
-          <h2>Structured academic workflows for every campus role.</h2>
+          <span className="eyebrow">Institutional Roles</span>
+          <h2>Organized by course, reviewed before publication.</h2>
         </div>
 
-        <div className="feature-grid">
-          <article className="feature-card">
-            <div className="icon-well">
-              <FileSearch size={20} />
-            </div>
-            <h3>Indexed Catalog Discovery</h3>
+        <div className="pillars-grid">
+          <article className="pillar-col">
+            <div className="pillar-role">Students</div>
+            <h3>Consult Approved Course Holdings</h3>
             <p>
-              Search approved titles and cascade across Departments, Subjects, and 7 document
-              classifications with instant inline PDF reading and authorized downloads.
+              Register with an official <code>@mitaoe.ac.in</code> address, search indexed
+              catalog titles, filter by department, subject, or material type, read inline in the
+              document viewer, or download verified PDFs.
             </p>
           </article>
 
-          <article className="feature-card">
-            <div className="icon-well">
-              <GraduationCap size={20} />
-            </div>
-            <h3>Faculty Publishing Portal</h3>
+          <article className="pillar-col">
+            <div className="pillar-role">Faculty</div>
+            <h3>Submit &amp; Track Reference Material</h3>
             <p>
-              Upload unencrypted PDFs up to 50 MiB with pre-upload integrity checks, automatic
-              SHA-256 deduplication, and transparent review-status tracking.
+              Upload unencrypted PDF files directly under an existing academic subject with
+              automatic SHA-256 duplicate detection, and follow review outcomes or administrative
+              revision notes.
             </p>
           </article>
 
-          <article className="feature-card">
-            <div className="icon-well">
-              <FolderTree size={20} />
-            </div>
-            <h3>Administrative Governance</h3>
+          <article className="pillar-col">
+            <div className="pillar-role">Administrators</div>
+            <h3>Steward Hierarchy &amp; Review Queue</h3>
             <p>
-              Evaluate pending submissions atomically, enforce rejection notes, manage user roles,
-              and safeguard department-to-subject referential integrity.
+              Maintain departments, subjects, and institutional user roles, evaluate pending
+              submissions with atomic approval decisions, and curate approved metadata safely.
             </p>
           </article>
         </div>
@@ -194,24 +122,24 @@ export const LandingPage: React.FC = () => {
 
       <section className="section" id="how-it-works">
         <div className="how-card">
-          <div style={{ maxWidth: '640px' }}>
-            <span className="eyebrow">
-              <FileCheck2 size={13} /> Role-Based Institutional Access
-            </span>
-            <h2>Ready to access the institutional catalog?</h2>
+          <div style={{ maxWidth: '620px' }}>
+            <span className="eyebrow">Repository Access</span>
+            <h2>Sign in with your MIT AOE credentials.</h2>
             <p style={{ marginTop: '6px' }}>
-              Students with an <strong>@mitaoe.ac.in</strong> email can self-register immediately.
-              Faculty and departmental administrators sign in with institution-provisioned
-              credentials.
+              Students with an <strong>@mitaoe.ac.in</strong> email can register for immediate
+              catalog access. Faculty and departmental administrators sign in with provisioned
+              accounts.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <Link to="/sign-in" className="btn btn-primary btn-lg">
               Sign In <ArrowRight size={16} />
             </Link>
-            <Link to="/register" className="btn btn-secondary btn-lg">
-              Student Registration
-            </Link>
+            {!isAuthenticated && (
+              <Link to="/register" className="btn btn-secondary btn-lg">
+                Create Student Account
+              </Link>
+            )}
           </div>
         </div>
       </section>

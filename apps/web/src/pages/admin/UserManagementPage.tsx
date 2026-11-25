@@ -166,13 +166,11 @@ export const UserManagementPage: React.FC = () => {
     <div>
       <div className="page-header">
         <div>
-          <span className="eyebrow">
-            <span className="eyebrow-dot" /> Access Governance
-          </span>
+          <span className="eyebrow">Access Governance</span>
           <h1>User Accounts</h1>
           <p className="page-header-subtitle">
-            Manage institutional accounts, provision Faculty and Admin credentials, and administer
-            role permissions with referential protection.
+            View institutional accounts, provision Faculty and Administrator credentials, and adjust
+            roles subject to referential integrity protection.
           </p>
         </div>
 

@@ -120,9 +120,10 @@ export const RegisterPage: React.FC = () => {
     <section className="sign-section">
       <div className="signin-card">
         <span className="eyebrow">Student Self-Registration</span>
-        <h1 style={{ marginBottom: '6px' }}>Create your account.</h1>
+        <h1 style={{ marginBottom: '6px' }}>Create a student account.</h1>
         <p style={{ fontSize: '13px', marginBottom: '20px' }}>
-          Available for enrolled students with an official <strong>@mitaoe.ac.in</strong> email.
+          Register with an official <strong>@mitaoe.ac.in</strong> email address to browse and
+          download approved course documents.
         </p>
 
         {serverError && <ErrorAlert message={serverError} />}

@@ -4,7 +4,8 @@ import { ChevronDown, ChevronRight, FolderTree } from 'lucide-react';
 import { listDepartments, listSubjects } from '../../api';
 import type { DepartmentDto, SubjectDto } from '../../api/types';
 
-const DOT_PALETTE = ['#0095eb', '#10b981', '#8b5cf6', '#f59e0b', '#06b6d4', '#ec4899'];
+const PAGE_LIMIT_HINT = 1;
+void PAGE_LIMIT_HINT;
 
 export const SidebarHierarchyTree: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) => {
   const [departments, setDepartments] = useState<DepartmentDto[]>([]);
@@ -56,17 +57,16 @@ export const SidebarHierarchyTree: React.FC<{ onNavigate?: () => void }> = ({ on
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
             <FolderTree size={14} color="var(--c-accent)" />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              All Approved Material
+              All Catalog Holdings
             </span>
           </span>
         </button>
 
-        {departments.map((dept, index) => {
+        {departments.map((dept) => {
           const deptSubjects = subjects.filter((s) => s.departmentId === dept.id);
           const isSelectedDept = activeDeptId === dept.id && !activeSubjectId;
           const isExpanded =
             expandedDepts[dept.id] ?? (activeDeptId === dept.id || deptSubjects.some((s) => s.id === activeSubjectId));
-          const dotColor = DOT_PALETTE[index % DOT_PALETTE.length];
 
           return (
             <div key={dept.id}>
@@ -87,7 +87,7 @@ export const SidebarHierarchyTree: React.FC<{ onNavigate?: () => void }> = ({ on
                   }}
                   title={dept.name}
                 >
-                  <span className="tree-dot" style={{ backgroundColor: dotColor }} aria-hidden="true" />
+                  <span className="tree-marker" aria-hidden="true" />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {dept.name}
                   </span>

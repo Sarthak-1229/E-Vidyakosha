@@ -178,13 +178,11 @@ export const FacultyUploadPage: React.FC = () => {
     <div style={{ maxWidth: '840px' }}>
       <div className="page-header">
         <div>
-          <span className="eyebrow">
-            <span className="eyebrow-dot" /> Faculty Contribution Portal
-          </span>
+          <span className="eyebrow">Faculty Contribution Portal</span>
           <h1>Upload Academic Resource</h1>
           <p className="page-header-subtitle">
-            Submit lecture notes, lab manuals, and papers. Files are verified for format,
-            encryption, and SHA-256 uniqueness before entering the Admin review queue.
+            Submit lecture notes, lab manuals, and reference texts. Uploaded PDFs are checked for
+            structure, encryption, and SHA-256 uniqueness before entering the review queue.
           </p>
         </div>
       </div>

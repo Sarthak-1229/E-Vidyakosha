@@ -223,13 +223,11 @@ export const DocumentManagementPage: React.FC = () => {
     <div>
       <div className="page-header">
         <div>
-          <span className="eyebrow">
-            <span className="eyebrow-dot" /> Catalog Administration
-          </span>
+          <span className="eyebrow">Catalog Administration</span>
           <h1>Manage Approved Documents</h1>
           <p className="page-header-subtitle">
-            Edit catalog metadata, adjust course assignments, or permanently remove deprecated
-            records. PDF binaries remain immutable per institutional integrity rules.
+            Update catalog metadata, adjust course assignments, or permanently remove deprecated
+            records. PDF binaries remain immutable per institutional policy.
           </p>
         </div>
       </div>

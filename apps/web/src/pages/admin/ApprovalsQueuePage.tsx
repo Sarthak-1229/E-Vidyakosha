@@ -84,13 +84,11 @@ export const ApprovalsQueuePage: React.FC = () => {
     <div>
       <div className="page-header">
         <div>
-          <span className="eyebrow">
-            <span className="eyebrow-dot" /> Administrative Governance
-          </span>
+          <span className="eyebrow">Administrative Governance</span>
           <h1>Review &amp; Approvals Queue</h1>
           <p className="page-header-subtitle">
-            Inspect pending faculty metadata submissions. Approved resources publish immediately to
-            the repository; rejections require revision notes for the faculty author.
+            Evaluate pending faculty submissions. Approvals publish immediately to the institutional
+            catalog; rejections require revision notes returned to the submitting faculty member.
           </p>
         </div>
 
@@ -171,12 +169,12 @@ export const ApprovalsQueuePage: React.FC = () => {
             return (
               <div
                 key={sub.id}
-                className="panel"
+                className="docket-card"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '18px 22px',
+                  padding: '18px 20px',
                   gap: '18px',
                   flexWrap: 'wrap',
                 }}

@@ -205,13 +205,11 @@ export const AcademicHierarchyPage: React.FC = () => {
     <div>
       <div className="page-header">
         <div>
-          <span className="eyebrow">
-            <span className="eyebrow-dot" /> Academic Structure
-          </span>
+          <span className="eyebrow">Academic Taxonomy</span>
           <h1>Departments &amp; Subjects</h1>
           <p className="page-header-subtitle">
-            Manage departments and subjects. Referential integrity blocks removing departments with
-            subjects or subjects containing uploaded documents.
+            Manage departments and subjects. Referential integrity prevents deleting departments
+            with assigned subjects or subjects containing uploaded documents.
           </p>
         </div>
       </div>

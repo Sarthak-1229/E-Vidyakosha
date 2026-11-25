@@ -49,9 +49,9 @@ export const TypeBadge: React.FC<{ type: DocumentType }> = ({ type }) => {
 
 export const RoleBadge: React.FC<{ role: UserRole }> = ({ role }) => {
   const colors: Record<UserRole, { bg: string; border: string; text: string }> = {
-    STUDENT: { bg: '#e8f5fe', border: '#bae6fd', text: '#0369a1' },
-    FACULTY: { bg: '#dcfce7', border: '#bbf7d0', text: '#166534' },
-    ADMIN: { bg: '#ede9fe', border: '#ddd6fe', text: '#5b21b6' },
+    STUDENT: { bg: '#ebf0f6', border: '#c5d3e2', text: '#213a57' },
+    FACULTY: { bg: '#edf6f0', border: '#bddac7', text: '#1b4d33' },
+    ADMIN: { bg: '#f2eef6', border: '#d6cbe2', text: '#4a3363' },
   };
 
   const style = colors[role] || colors.STUDENT;

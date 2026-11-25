@@ -44,45 +44,13 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ document: doc, subje
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '8px',
-            marginBottom: '12px',
-            flexWrap: 'wrap',
+            marginBottom: '10px',
           }}
         >
           <TypeBadge type={doc.type} />
-          {subject && (
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                color: 'var(--c-text-secondary)',
-                background: 'var(--c-surface-subtle)',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                border: '1px solid var(--c-border)',
-                maxWidth: '175px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-              title={department ? `${department.name} · ${subject.name}` : subject.name}
-            >
-              {subject.name}
-            </span>
-          )}
         </div>
 
-        <h3
-          style={{
-            fontSize: '15.5px',
-            lineHeight: 1.35,
-            color: 'var(--c-ink)',
-            marginBottom: '8px',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
+        <h3 className="doc-card-title">
           <Link to={`/library/${doc.id}`} className="table-doc-link" title={doc.title}>
             {doc.title}
           </Link>
@@ -98,9 +66,11 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ document: doc, subje
             marginBottom: '16px',
           }}
         >
-          {department && (
+          {(subject || department) && (
             <div style={{ color: 'var(--c-text-secondary)', fontWeight: 500 }}>
-              {department.name}
+              {subject && <span style={{ color: 'var(--c-ink-strong)', fontWeight: 600 }}>{subject.name}</span>}
+              {subject && department && ' · '}
+              {department && <span>{department.name}</span>}
             </div>
           )}
           {doc.author && (
